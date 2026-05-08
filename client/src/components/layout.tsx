@@ -6,6 +6,7 @@ import {
   Receipt,
   History,
   Menu,
+  Settings,
   ChefHat,
   UtensilsCrossed,
   LogOut,
@@ -29,6 +30,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
     { icon: UtensilsCrossed, label: 'Meals', href: '/meals' },
     { icon: Receipt, label: 'Expenses', href: '/expenses' },
     { icon: History, label: 'History', href: '/history' },
+    { icon: Settings, label: 'Settings', href: '/settings' },
   ];
 
   const handleLogout = async () => {

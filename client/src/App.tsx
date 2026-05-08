@@ -18,6 +18,7 @@ import HistoryPage from "@/pages/history";
 import Meals from "@/pages/meals";
 import Members from "@/pages/members";
 import NotFound from "@/pages/not-found";
+import Settings from "@/pages/settings";
 import SharedPage, { SharedAccessPage } from "@/pages/shared";
 
 function Router() {
@@ -43,6 +44,7 @@ function Router() {
         <Route path="/meals" component={Meals} />
         <Route path="/history" component={HistoryPage} />
         <Route path="/changelog" component={ChangelogPage} />
+        <Route path="/settings" component={Settings} />
         <Route component={NotFound} />
       </Switch>
     </Layout>
@@ -140,6 +142,7 @@ function AppShell() {
       "/meals": "Meals - MealManager",
       "/history": "History - MealManager",
       "/changelog": "Changelog - MealManager",
+      "/settings": "Settings - MealManager",
       "/auth": isRecoveryFlow ? "Reset Password - MealManager" : "Authentication - MealManager",
     };
 

@@ -64,6 +64,7 @@ export interface ChangelogEntry {
 
 export interface Cycle {
   id: string;
+  name: string;
   status: CycleStatus;
   startedAt: string;
   closedAt?: string | null;
@@ -119,6 +120,7 @@ interface MealContextType {
   addDeposit: (memberId: string, amount: number, cycleId?: string, note?: string) => Promise<void>;
   saveMealLogs: (entries: Array<{ memberId: string; count: number }>, date: string, cycleId?: string) => Promise<void>;
   logMeal: (memberId: string, count: number, date: string, cycleId?: string) => Promise<void>;
+  renameActiveCycle: (name: string) => Promise<void>;
   closeActiveCycle: () => Promise<void>;
   markCycleClosed: (cycleId: string) => Promise<void>;
   deleteCycle: (cycleId: string) => Promise<void>;
@@ -143,6 +145,7 @@ type MemberRow = {
 
 type CycleRow = {
   id: string;
+  name: string | null;
   status: CycleStatus;
   started_at: string;
   closed_at: string | null;
@@ -191,6 +194,42 @@ type ChangelogRow = {
 
 function toAvatar(name: string, fallback?: string | null) {
   return fallback || name.substring(0, 2).toUpperCase();
+}
+
+function getCycleSeasonName(dateValue: string | Date) {
+  const month = dateValue instanceof Date ? dateValue.getMonth() : new Date(dateValue).getMonth();
+
+  if (month >= 2 && month <= 4) return 'Spring';
+  if (month >= 5 && month <= 7) return 'Summer';
+  if (month >= 8 && month <= 10) return 'Fall';
+  return 'Winter';
+}
+
+function getDefaultCycleBaseName(dateValue: string | Date) {
+  const date = dateValue instanceof Date ? dateValue : new Date(dateValue);
+  const year = String(date.getFullYear()).slice(-2);
+  return `Meal_${getCycleSeasonName(date)}-${year}`;
+}
+
+function generateUniqueCycleName(dateValue: string | Date, existingCycles: Cycle[]) {
+  const baseName = getDefaultCycleBaseName(dateValue);
+  const existingNames = new Set(
+    existingCycles.map((cycle) => cycle.name.trim().toLowerCase()).filter(Boolean),
+  );
+
+  if (!existingNames.has(baseName.toLowerCase())) {
+    return baseName;
+  }
+
+  let suffix = 1;
+  let candidate = `${baseName}_${suffix}`;
+
+  while (existingNames.has(candidate.toLowerCase())) {
+    suffix += 1;
+    candidate = `${baseName}_${suffix}`;
+  }
+
+  return candidate;
 }
 
 function buildUpdateChange(
@@ -481,6 +520,7 @@ export function MealProvider({ children }: { children: ReactNode }) {
 
       const nextCycles = ((cyclesResult.data || []) as CycleRow[]).map((cycle) => ({
         id: cycle.id,
+        name: cycle.name || getDefaultCycleBaseName(cycle.started_at),
         status: cycle.status,
         startedAt: cycle.started_at,
         closedAt: cycle.closed_at,
@@ -1009,6 +1049,47 @@ export function MealProvider({ children }: { children: ReactNode }) {
     await saveMealLogs([{ memberId, count }], dateStr, cycleId);
   };
 
+  const renameActiveCycle = async (name: string) => {
+    if (!userId || !activeCycle) return;
+
+    const trimmedName = name.trim();
+    if (!trimmedName) {
+      throw new Error('Cycle name is required.');
+    }
+
+    if (trimmedName === activeCycle.name) {
+      return;
+    }
+
+    const duplicateCycle = cycles.find((cycle) => (
+      cycle.id !== activeCycle.id &&
+      cycle.name.trim().toLowerCase() === trimmedName.toLowerCase()
+    ));
+
+    if (duplicateCycle) {
+      throw new Error('A cycle with this name already exists.');
+    }
+
+    const { error } = await supabase
+      .from('cycles')
+      .update({ name: trimmedName })
+      .eq('id', activeCycle.id)
+      .eq('user_id', userId)
+      .eq('status', 'active');
+
+    if (error) {
+      console.error('Error renaming active cycle:', error);
+      if (error.code === '23505') {
+        throw new Error('A cycle with this name already exists.');
+      }
+      throw new Error('Unable to rename the current cycle right now.');
+    }
+
+    setCycles((prev) => prev.map((cycle) => (
+      cycle.id === activeCycle.id ? { ...cycle, name: trimmedName } : cycle
+    )));
+  };
+
   const closeActiveCycle = async () => {
     if (!userId || !activeCycle) return;
     if (pendingCycle) {
@@ -1022,6 +1103,7 @@ export function MealProvider({ children }: { children: ReactNode }) {
     }));
 
     const now = new Date().toISOString();
+    const nextCycleName = generateUniqueCycleName(now, cycles);
 
     const { error: updateError } = await supabase
       .from('cycles')
@@ -1041,6 +1123,7 @@ export function MealProvider({ children }: { children: ReactNode }) {
     const { data: nextActive, error: createError } = await supabase
       .from('cycles')
       .insert([{
+        name: nextCycleName,
         status: 'active',
         user_id: userId,
         started_at: now,
@@ -1056,6 +1139,7 @@ export function MealProvider({ children }: { children: ReactNode }) {
     setCycles((prev) => [
       {
         id: nextActive.id,
+        name: nextActive.name ?? nextCycleName,
         status: nextActive.status as CycleStatus,
         startedAt: nextActive.started_at,
         closedAt: nextActive.closed_at,
@@ -1190,6 +1274,7 @@ export function MealProvider({ children }: { children: ReactNode }) {
         addDeposit,
         saveMealLogs,
         logMeal,
+        renameActiveCycle,
         closeActiveCycle,
         markCycleClosed,
         deleteCycle,

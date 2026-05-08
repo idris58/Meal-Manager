@@ -335,9 +335,9 @@ function PendingCycleCard({ details }: { details: CycleDetails }) {
       <AccordionTrigger className="hover:no-underline py-4">
         <div className="flex flex-1 items-center justify-between gap-4">
           <div className="text-left">
-            <p className="font-bold">Pending Cycle Closed: {format(new Date(details.cycle.closedAt || details.cycle.startedAt), 'PPP')}</p>
+            <p className="font-bold">{details.cycle.name}</p>
             <p className="text-sm text-muted-foreground">
-              {details.members.length} Members • {formatMealCount(details.stats.totalMealsConsumed)} Meals • Settlement still editable
+              Closed: {format(new Date(details.cycle.closedAt || details.cycle.startedAt), 'PPP')} • {details.members.length} Members • {formatMealCount(details.stats.totalMealsConsumed)} Meals • Settlement still editable
             </p>
           </div>
           <Badge className="bg-amber-100 text-amber-700 hover:bg-amber-100">Pending</Badge>
@@ -662,8 +662,8 @@ function ClosedCycleCard({ details, isExpanded }: { details: CycleDetails; isExp
         <AccordionPrimitive.Header className="min-w-0 flex-1">
           <AccordionPrimitive.Trigger className="flex w-full items-center justify-between text-left text-sm font-medium transition-all hover:no-underline [&[data-state=open]>svg]:rotate-180">
             <div className="text-left">
-              <p className="font-bold">Cycle Closed: {format(new Date(details.cycle.finalizedAt || details.cycle.closedAt || details.cycle.startedAt), 'PPP')}</p>
-              <p className="text-sm text-muted-foreground">{details.members.length} Members • {formatMealCount(details.stats.totalMealsConsumed)} Meals</p>
+              <p className="font-bold">{details.cycle.name}</p>
+              <p className="text-sm text-muted-foreground">Closed: {format(new Date(details.cycle.finalizedAt || details.cycle.closedAt || details.cycle.startedAt), 'PPP')} • {details.members.length} Members • {formatMealCount(details.stats.totalMealsConsumed)} Meals</p>
             </div>
             <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-200" />
           </AccordionPrimitive.Trigger>

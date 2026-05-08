@@ -1,10 +1,11 @@
-import { useEffect, useState } from 'react';
-import { Copy, ExternalLink, RefreshCcw, Share2 } from 'lucide-react';
+import { useEffect, useState, type FormEvent } from 'react';
+import { Copy, ExternalLink, RefreshCcw, Save, Share2 } from 'lucide-react';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useAuth } from '@/lib/auth-context';
+import { useMeal } from '@/lib/meal-context';
 import { supabase } from '@/lib/supabase';
 
 type ShareLinkConfig = {
@@ -14,6 +15,106 @@ type ShareLinkConfig = {
 
 function createShareToken() {
   return crypto.randomUUID().replace(/-/g, '');
+}
+
+function CurrentCycleSettingsCard() {
+  const { activeCycle, renameActiveCycle } = useMeal();
+  const [cycleName, setCycleName] = useState(activeCycle?.name ?? '');
+  const [saving, setSaving] = useState(false);
+  const [message, setMessage] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    setCycleName(activeCycle?.name ?? '');
+    setMessage(null);
+    setError(null);
+  }, [activeCycle?.id, activeCycle?.name]);
+
+  const trimmedName = cycleName.trim();
+  const isUnchanged = Boolean(activeCycle) && trimmedName === activeCycle?.name;
+
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setMessage(null);
+    setError(null);
+
+    if (!activeCycle) {
+      setError('No active cycle is available to rename.');
+      return;
+    }
+
+    if (!trimmedName) {
+      setError('Cycle name is required.');
+      return;
+    }
+
+    if (isUnchanged) {
+      return;
+    }
+
+    setSaving(true);
+    try {
+      await renameActiveCycle(trimmedName);
+      setMessage('Current cycle name updated.');
+    } catch (caughtError) {
+      const nextError =
+        caughtError instanceof Error
+          ? caughtError.message
+          : 'Unable to rename the current cycle right now.';
+      setError(nextError);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <Card>
+      <CardHeader className="pb-3">
+        <CardTitle>Current Cycle</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <p className="text-sm text-muted-foreground">
+            Rename the active cycle so it is easier to identify in history and shared records later.
+          </p>
+
+          <div className="space-y-2">
+            <label className="text-sm font-medium" htmlFor="cycle-name">
+              Cycle name
+            </label>
+            <Input
+              id="cycle-name"
+              value={cycleName}
+              onChange={(event) => {
+                setCycleName(event.target.value);
+                if (message) setMessage(null);
+                if (error) setError(null);
+              }}
+              placeholder="Meal_Summer-26"
+              disabled={!activeCycle || saving}
+            />
+          </div>
+
+          <Button type="submit" className="gap-2" disabled={!activeCycle || saving || isUnchanged}>
+            <Save className="h-4 w-4" />
+            {saving ? 'Saving...' : 'Save Cycle Name'}
+          </Button>
+
+          {message ? (
+            <p className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
+              {message}
+            </p>
+          ) : null}
+
+          {error ? (
+            <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+              {error}
+            </p>
+          ) : null}
+        </form>
+      </CardContent>
+    </Card>
+  );
 }
 
 function ShareSettingsCard() {
@@ -300,6 +401,7 @@ export default function SettingsPage() {
         </p>
       </header>
 
+      <CurrentCycleSettingsCard />
       <ShareSettingsCard />
     </div>
   );

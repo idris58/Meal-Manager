@@ -2,6 +2,8 @@ import { FormEvent, useEffect, useMemo, useState } from "react";
 import {
   ArrowLeftRight,
   ChefHat,
+  KeyRound,
+  Loader2,
   Share2,
   ShoppingBag,
   Users,
@@ -87,6 +89,14 @@ function formatCycleStatus(status: SharedPayload["cycle"]["status"]) {
   return "Closed";
 }
 
+function getMealCodeErrorMessage(error: unknown) {
+  if (error instanceof Error && error.message) {
+    return error.message;
+  }
+
+  return "This Meal Code is invalid or sharing is disabled. Ask the manager for a valid code.";
+}
+
 export function SharedAccessPage() {
   const [, setLocation] = useLocation();
   const [mealCode, setMealCode] = useState("");
@@ -98,7 +108,7 @@ export function SharedAccessPage() {
     const normalizedCode = mealCode.trim();
 
     if (!normalizedCode) {
-      setError("Enter a Meal Code to open the shared view.");
+      setError("Enter the Meal Code shared by the manager.");
       return;
     }
 
@@ -110,59 +120,64 @@ export function SharedAccessPage() {
       const body = await response.json().catch(() => null);
 
       if (!response.ok) {
-        throw new Error(body?.message || "This Meal Code is invalid or disabled. Ask the manager for a valid code.");
+        throw new Error(body?.message || "This Meal Code is invalid or sharing is disabled. Ask the manager for a valid code.");
       }
 
       setLocation(`/shared/${normalizedCode}`);
     } catch (caughtError) {
-      const nextError =
-        caughtError instanceof Error
-          ? caughtError.message
-          : "This Meal Code is invalid or disabled. Ask the manager for a valid code.";
-      setError(nextError);
+      setError(getMealCodeErrorMessage(caughtError));
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-4 py-8">
-      <Card className="w-full max-w-lg border-none shadow-xl shadow-emerald-100/50">
-        <CardHeader className="space-y-4">
-          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-500 text-white shadow-lg shadow-emerald-200">
-            <ChefHat className="h-6 w-6" />
+    <div className="flex min-h-screen items-center justify-center bg-[radial-gradient(circle_at_top_left,rgba(16,185,129,0.16),transparent_34%),linear-gradient(135deg,#f8fafc_0%,#eefcf6_100%)] px-4 py-8">
+      <Card className="w-full max-w-md overflow-hidden border-none shadow-2xl shadow-emerald-100/70">
+        <CardHeader className="space-y-5 pb-4">
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-500 text-white shadow-lg shadow-emerald-200">
+              <ChefHat className="h-6 w-6" />
+            </div>
+            <div className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
+              Read only
+            </div>
           </div>
           <div className="space-y-1">
             <p className="text-sm font-medium uppercase tracking-[0.2em] text-emerald-700">
               Shared View
             </p>
-            <CardTitle className="font-heading text-2xl">Open with Meal Code</CardTitle>
+            <CardTitle className="font-heading text-3xl">Enter Access Code</CardTitle>
           </div>
           <p className="text-sm text-muted-foreground">
-            Enter the Meal Code shared by the manager to view the current meal cycle. If you already have the full link, opening it directly will still work.
+            Use the Meal Code shared by the manager to open the read-only cycle view. Full shared links still open directly.
           </p>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-4">
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
               <label htmlFor="meal-code" className="text-sm font-medium">
-                Meal Code
+                Access Code
               </label>
-              <Input
-                id="meal-code"
-                value={mealCode}
-                onChange={(event) => {
-                  setMealCode(event.target.value);
-                  if (error) {
-                    setError(null);
-                  }
-                }}
-                placeholder="Enter Meal Code"
-                autoCapitalize="none"
-                autoCorrect="off"
-                spellCheck={false}
-                disabled={loading}
-              />
+              <div className="relative">
+                <KeyRound className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  id="meal-code"
+                  value={mealCode}
+                  onChange={(event) => {
+                    setMealCode(event.target.value);
+                    if (error) {
+                      setError(null);
+                    }
+                  }}
+                  placeholder="Paste or type access code"
+                  className="pl-9"
+                  autoCapitalize="none"
+                  autoCorrect="off"
+                  spellCheck={false}
+                  disabled={loading}
+                />
+              </div>
             </div>
 
             {error ? (
@@ -171,14 +186,24 @@ export function SharedAccessPage() {
               </p>
             ) : (
               <p className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
-                Enter a Meal Code to view the current shared meal cycle.
+                Enter an access code to view the latest shared meal-cycle data.
               </p>
             )}
 
             <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? "Opening Shared View..." : "Open Shared View"}
+              {loading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Checking code...
+                </>
+              ) : (
+                "Open Shared View"
+              )}
             </Button>
           </form>
+          <p className="text-center text-xs text-muted-foreground">
+            If the code does not work, ask the manager to confirm sharing is enabled.
+          </p>
         </CardContent>
       </Card>
     </div>

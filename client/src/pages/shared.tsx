@@ -50,6 +50,7 @@ type SharedMealLog = {
 type SharedPayload = {
   cycle: {
     id: string;
+    name: string;
     status: "active" | "pending" | "closed";
     closedAt?: string | null;
   };
@@ -78,6 +79,12 @@ function formatBalance(amount: number) {
 function formatMealCount(value: number) {
   const rounded = Math.round((value + Number.EPSILON) * 1000) / 1000;
   return rounded.toString();
+}
+
+function formatCycleStatus(status: SharedPayload["cycle"]["status"]) {
+  if (status === "active") return "Active";
+  if (status === "pending") return "Pending";
+  return "Closed";
 }
 
 export function SharedAccessPage() {
@@ -310,9 +317,14 @@ export default function SharedPage({ token }: { token: string }) {
               <p className="text-sm font-medium uppercase tracking-[0.2em] text-emerald-700">
                 Shared View
               </p>
-              <h1 className="font-heading text-xl font-bold text-slate-900">
-                {data.cycle.status === "pending" ? "Pending Settlement Cycle" : "Current Meal Cycle"}
-              </h1>
+              <div className="space-y-0.5">
+                <h1 className="font-heading text-xl font-bold text-slate-900">
+                  Cycle: {data.cycle.name}
+                </h1>
+                <p className="text-sm text-muted-foreground">
+                  Status: {formatCycleStatus(data.cycle.status)}
+                </p>
+              </div>
             </div>
           </div>
           <div className="flex items-center gap-2 self-start sm:self-auto">

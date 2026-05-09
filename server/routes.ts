@@ -17,6 +17,7 @@ type SnapshotMember = {
 
 type CycleRow = {
   id: string;
+  name: string;
   status: "active" | "pending" | "closed";
   started_at: string;
   closed_at: string | null;
@@ -135,6 +136,7 @@ function buildSharedPayload(
   return {
     cycle: {
       id: cycle.id,
+      name: cycle.name,
       status: cycle.status,
       closedAt: cycle.closed_at,
     },
@@ -182,7 +184,7 @@ export async function registerRoutes(
 
     const { data: cycle, error: cycleError } = await supabaseAdmin
       .from("cycles")
-      .select("id, status, started_at, closed_at, members_snapshot")
+      .select("id, name, status, started_at, closed_at, members_snapshot")
       .eq("user_id", shareLink.user_id)
       .in("status", ["pending", "active"])
       .order("closed_at", { ascending: false, nullsFirst: false })

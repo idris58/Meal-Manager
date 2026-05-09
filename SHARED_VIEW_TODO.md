@@ -8,6 +8,7 @@ These items are intentionally kept separate so each one can be planned and imple
 - Move existing settings-style controls into this page where appropriate.
 - Add any new future configuration options here instead of scattering them across feature pages.
 - Decide what belongs in settings during the implementation plan before moving controls.
+- add cycle names and add active cycle rename in setting
 
 ## 2. Shared View Cycle Info Header
 

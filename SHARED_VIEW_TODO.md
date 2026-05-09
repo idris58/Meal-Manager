@@ -45,3 +45,11 @@ These items are intentionally kept separate so each one can be planned and imple
   - invalid access code
   - disabled share link
 - Make each message specific enough that the viewer understands what happened.
+
+
+# Fix needed later
+
+## 1. Shared view Access Code Entry page Fix
+- Remove the Read only badge from the shared view Access Code Entry page
+- Instead of "open the read-only cycle view." write "open the shared view."
+- Remove "Full shared links still open directly." this text from the page

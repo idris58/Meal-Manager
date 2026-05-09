@@ -314,15 +314,15 @@ export default function SharedPage({ token }: { token: string }) {
               <ChefHat className="h-5 w-5" />
             </div>
             <div>
-              <p className="text-sm font-medium uppercase tracking-[0.2em] text-emerald-700">
+              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-emerald-700">
                 Shared View
               </p>
-              <div className="space-y-0.5">
-                <h1 className="font-heading text-xl font-bold text-slate-900">
-                  Cycle: {data.cycle.name}
+              <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1">
+                <h1 className="font-heading text-lg font-bold leading-tight text-slate-900 sm:text-xl">
+                  {data.cycle.name}
                 </h1>
-                <p className="text-sm text-muted-foreground">
-                  Status: {formatCycleStatus(data.cycle.status)}
+                <p className="rounded-full bg-secondary px-2.5 py-1 text-xs font-semibold text-muted-foreground">
+                  {formatCycleStatus(data.cycle.status)}
                 </p>
               </div>
             </div>

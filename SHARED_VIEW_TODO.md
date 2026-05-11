@@ -28,7 +28,15 @@ These items are intentionally kept separate so each one can be planned and imple
   - loading state before redirect or data load
 - Keep the direct shared link behavior unchanged.
 
-## 4. Shared View Member-Focused Summary Mode
+## 4. Table usability
+- make horizontal tables easier to read on mobile:
+  - stronger sticky first column
+  - subtle row highlighting
+  - clearer total row styling
+- this is a UI improvement, not a new feature, but it matters
+for now apply it only in mobile view. for shared view  meal table
+
+## 5. Shared View Member-Focused Summary Mode
 
 - Add a quick selector in shared view:
   - `All Members`
@@ -37,7 +45,7 @@ These items are intentionally kept separate so each one can be planned and imple
 - Show only that member's summary row/card so the member does not need to scan the full list.
 - Keep all-members mode as the default.
 
-## 5. Shared View Empty And No-Data States
+## 6. Shared View Empty And No-Data States
 
 - Improve shared-view empty states for:
   - no expenses yet

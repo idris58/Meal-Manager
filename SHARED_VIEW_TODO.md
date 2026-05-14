@@ -37,7 +37,7 @@ These items are intentionally kept separate so each one can be planned and imple
 - Show only that member's summary row/card so the member does not need to scan the full list.
 - Keep all-members mode as the default.
 
-## ⌛ 5. Table usability
+## ✅ 5. Table usability
 - make horizontal tables easier to read on mobile:
   - stronger sticky first column
   - subtle row highlighting

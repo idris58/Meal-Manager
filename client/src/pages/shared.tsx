@@ -18,6 +18,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 
@@ -215,6 +216,8 @@ export default function SharedPage({ token }: { token: string }) {
   const [data, setData] = useState<SharedPayload | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [summaryMode, setSummaryMode] = useState<"all" | "single">("all");
+  const [selectedMemberId, setSelectedMemberId] = useState("");
 
   useEffect(() => {
     let active = true;
@@ -258,6 +261,22 @@ export default function SharedPage({ token }: { token: string }) {
     };
   }, [token]);
 
+  useEffect(() => {
+    if (!data?.members.length) {
+      setSelectedMemberId("");
+      setSummaryMode("all");
+      return;
+    }
+
+    setSelectedMemberId((currentMemberId) => {
+      if (data.members.some((member) => member.id === currentMemberId)) {
+        return currentMemberId;
+      }
+
+      return data.members[0].id;
+    });
+  }, [data?.members]);
+
   const days = useMemo(() => {
     if (!data || data.mealLogs.length === 0) {
       return [startOfDay(new Date())];
@@ -289,6 +308,19 @@ export default function SharedPage({ token }: { token: string }) {
 
     return totals;
   }, [data]);
+
+  const visibleSummaryMembers = useMemo(() => {
+    if (!data) {
+      return [];
+    }
+
+    if (summaryMode === "single") {
+      const selectedMember = data.members.find((member) => member.id === selectedMemberId);
+      return selectedMember ? [selectedMember] : [];
+    }
+
+    return data.members;
+  }, [data, selectedMemberId, summaryMode]);
 
   if (loading) {
     return (
@@ -517,12 +549,41 @@ export default function SharedPage({ token }: { token: string }) {
         </section>
 
         <section className="space-y-4">
-          <div className="flex items-center gap-2">
-            <Users className="h-5 w-5 text-emerald-500" />
-            <h2 className="text-xl font-heading font-bold">Members Summary</h2>
+          <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+            <div className="flex items-center gap-2">
+              <Users className="h-5 w-5 text-emerald-500" />
+              <h2 className="text-xl font-heading font-bold">Members Summary</h2>
+            </div>
+            <div className="grid gap-2 sm:grid-cols-2 md:w-[26rem]">
+              <Select value={summaryMode} onValueChange={(value: "all" | "single") => setSummaryMode(value)}>
+                <SelectTrigger aria-label="Choose summary mode">
+                  <SelectValue placeholder="Summary mode" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Members</SelectItem>
+                  <SelectItem value="single">Single Member</SelectItem>
+                </SelectContent>
+              </Select>
+              <Select
+                value={selectedMemberId}
+                onValueChange={setSelectedMemberId}
+                disabled={summaryMode !== "single" || data.members.length === 0}
+              >
+                <SelectTrigger aria-label="Choose member">
+                  <SelectValue placeholder="Choose member" />
+                </SelectTrigger>
+                <SelectContent>
+                  {data.members.map((member) => (
+                    <SelectItem key={member.id} value={member.id}>
+                      {member.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
           <div className="space-y-3 md:hidden">
-            {data.members.map((member) => (
+            {visibleSummaryMembers.map((member) => (
               <Card key={member.id}>
                 <CardContent className="space-y-4 p-4">
                   <div className="flex min-w-0 items-center gap-3">
@@ -576,7 +637,7 @@ export default function SharedPage({ token }: { token: string }) {
                   </tr>
                 </thead>
                 <tbody className="divide-y">
-                  {data.members.map((member) => (
+                  {visibleSummaryMembers.map((member) => (
                     <tr key={member.id} className="hover:bg-muted/50">
                       <td className="p-4 font-medium">
                         {member.name}

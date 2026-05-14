@@ -468,7 +468,7 @@ export default function SharedPage({ token }: { token: string }) {
               <table className="min-w-max w-full border-collapse text-sm">
                 <thead className="sticky top-0 z-30 bg-card">
                   <tr className="border-b shadow-[0_1px_2px_rgba(0,0,0,0.05)]">
-                    <th className="sticky left-0 z-40 min-w-[84px] border-r bg-card p-3 text-left text-xs font-bold sm:min-w-[96px] md:min-w-[112px] md:p-4 md:text-sm">
+                    <th className="sticky left-0 z-40 min-w-[84px] border-r bg-card p-3 text-left text-xs font-bold shadow-[6px_0_14px_-12px_rgba(15,23,42,0.8)] sm:min-w-[96px] md:min-w-[112px] md:p-4 md:text-sm md:shadow-none">
                       Date
                     </th>
                     {data.members.map((member) => (
@@ -492,14 +492,26 @@ export default function SharedPage({ token }: { token: string }) {
                   </tr>
                 </thead>
                 <tbody className="divide-y">
-                  {days.map((day) => {
+                  {days.map((day, dayIndex) => {
                     const dateStr = format(day, "yyyy-MM-dd");
                     const dayLogs = data.mealLogs.filter((log) => log.date === dateStr);
                     const dayTotal = dayLogs.reduce((sum, log) => sum + log.count, 0);
+                    const isTintedRow = dayIndex % 2 === 1;
 
                     return (
-                      <tr key={dateStr} className="hover:bg-muted/50">
-                        <td className="sticky left-0 z-10 border-r bg-card p-3 font-medium md:p-4">
+                      <tr
+                        key={dateStr}
+                        className={cn(
+                          "hover:bg-muted/50",
+                          isTintedRow && "bg-slate-50/70 md:bg-transparent",
+                        )}
+                      >
+                        <td
+                          className={cn(
+                            "sticky left-0 z-10 border-r p-3 font-medium shadow-[6px_0_14px_-12px_rgba(15,23,42,0.75)] md:bg-card md:p-4 md:shadow-none",
+                            isTintedRow ? "bg-slate-50" : "bg-card",
+                          )}
+                        >
                           <div className="flex flex-col">
                             <span className={cn(isSameDay(day, new Date()) && "font-bold text-primary")}>
                               {format(day, "dd MMM")}
@@ -526,8 +538,8 @@ export default function SharedPage({ token }: { token: string }) {
                       </tr>
                     );
                   })}
-                  <tr className="border-t-2 bg-secondary/20">
-                    <td className="sticky left-0 z-20 min-w-[84px] whitespace-nowrap border-r bg-card p-3 font-bold sm:min-w-[96px] md:min-w-[112px] md:p-4">
+                  <tr className="border-t-2 border-emerald-200 bg-emerald-50/70 md:bg-secondary/20">
+                    <td className="sticky left-0 z-20 min-w-[84px] whitespace-nowrap border-r bg-emerald-50 p-3 font-bold text-emerald-800 shadow-[6px_0_14px_-12px_rgba(15,23,42,0.75)] sm:min-w-[96px] md:min-w-[112px] md:bg-card md:p-4 md:text-foreground md:shadow-none">
                       Total
                     </td>
                     {data.members.map((member) => (

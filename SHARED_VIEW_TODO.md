@@ -57,7 +57,7 @@ for now apply it only in mobile view. for shared view  meal table
 
 # Fix needed later
 
-## ⌛ 1. Shared view Access Code Entry page Fix
+## ✅ 1. Shared view Access Code Entry page Fix
 - Remove the Read only badge from the shared view Access Code Entry page
 - Instead of "open the read-only cycle view." write "open the shared view."
 - Remove "Full shared links still open directly." this text from the page

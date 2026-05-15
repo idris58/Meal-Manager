@@ -45,7 +45,7 @@ These items are intentionally kept separate so each one can be planned and imple
 - this is a UI improvement, not a new feature, but it matters
 for now apply it only in mobile view. for shared view  meal table
 
-## ⌛ 6. Shared View Empty And No-Data States
+## ✅ 6. Shared View Empty And No-Data States
 
 - Improve shared-view empty states for:
   - no expenses yet

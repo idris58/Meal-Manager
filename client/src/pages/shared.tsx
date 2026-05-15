@@ -1,4 +1,4 @@
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useState, type ReactNode } from "react";
 import {
   ArrowLeftRight,
   ChefHat,
@@ -96,6 +96,49 @@ function getMealCodeErrorMessage(error: unknown) {
   }
 
   return "This Meal Code is invalid or sharing is disabled. Ask the manager for a valid code.";
+}
+
+function SectionEmptyState({
+  icon,
+  title,
+  message,
+}: {
+  icon: ReactNode;
+  title: string;
+  message: string;
+}) {
+  return (
+    <Card>
+      <CardContent className="flex flex-col items-center justify-center px-4 py-10 text-center">
+        <div className="mb-3 rounded-full bg-emerald-50 p-3 text-emerald-600">
+          {icon}
+        </div>
+        <p className="font-heading text-lg font-bold text-slate-900">{title}</p>
+        <p className="mt-1 max-w-md text-sm text-muted-foreground">{message}</p>
+      </CardContent>
+    </Card>
+  );
+}
+
+function getExpenseEmptyState(tab: "all" | "meal" | "fixed") {
+  if (tab === "meal") {
+    return {
+      title: "No meal expenses yet",
+      message: "Meal grocery or food expenses will appear here after the manager adds them.",
+    };
+  }
+
+  if (tab === "fixed") {
+    return {
+      title: "No fixed expenses yet",
+      message: "Shared bills or fixed costs will appear here after the manager adds them.",
+    };
+  }
+
+  return {
+    title: "No expenses yet",
+    message: "This cycle does not have any shared expenses yet. Check back after the manager adds expenses.",
+  };
 }
 
 export function SharedAccessPage() {
@@ -347,10 +390,10 @@ export default function SharedPage({ token }: { token: string }) {
           </CardHeader>
           <CardContent className="space-y-4">
             <p className="text-sm text-muted-foreground">
-              {error || "This shared link is invalid or disabled."}
+              {error || "This shared link is invalid or sharing is disabled."}
             </p>
             <p className="text-sm text-muted-foreground">
-              Ask the owner for a fresh share link or Meal Code if you still need access.
+              Ask the manager for a fresh shared link or Meal Code if you still need access.
             </p>
             <Button variant="outline" className="gap-2" onClick={() => setLocation("/shared")}>
               <ArrowLeftRight className="h-4 w-4" />
@@ -463,101 +506,109 @@ export default function SharedPage({ token }: { token: string }) {
             <UtensilsCrossed className="h-5 w-5 text-emerald-500" />
             <h2 className="text-xl font-heading font-bold">Meal Logs</h2>
           </div>
-          <div className="overflow-hidden rounded-lg border bg-card shadow-sm">
-            <div className="max-h-[480px] overflow-auto overscroll-x-contain [scrollbar-gutter:stable_both-edges]">
-              <table className="min-w-max w-full border-collapse text-sm">
-                <thead className="sticky top-0 z-30 bg-card">
-                  <tr className="border-b shadow-[0_1px_2px_rgba(0,0,0,0.05)]">
-                    <th className="sticky left-0 z-40 min-w-[84px] border-r bg-card p-3 text-left text-xs font-bold shadow-[6px_0_14px_-12px_rgba(15,23,42,0.8)] sm:min-w-[96px] md:min-w-[112px] md:p-4 md:text-sm md:shadow-none">
-                      Date
-                    </th>
-                    {data.members.map((member) => (
-                      <th
-                        key={member.id}
-                        className="min-w-[72px] border-r bg-card p-1.5 text-center sm:min-w-[84px] md:min-w-[100px] md:p-2"
-                      >
-                        <div className="flex flex-col items-center gap-1 py-0.5 md:py-1">
-                          <Avatar className="h-5 w-5 text-[9px] md:h-6 md:w-6 md:text-[10px]">
-                            <AvatarFallback>{member.avatar}</AvatarFallback>
-                          </Avatar>
-                          <span className="w-14 truncate text-[9px] font-bold uppercase sm:w-16 md:w-20 md:text-[10px]">
-                            {member.name.split(" ")[0]}
-                          </span>
-                        </div>
+          {data.mealLogs.length === 0 ? (
+            <SectionEmptyState
+              icon={<UtensilsCrossed className="h-6 w-6" />}
+              title="No meal logs yet"
+              message="The manager has not logged meals for this cycle yet. Meal counts will appear here after the first daily log is saved."
+            />
+          ) : (
+            <div className="overflow-hidden rounded-lg border bg-card shadow-sm">
+              <div className="max-h-[480px] overflow-auto overscroll-x-contain [scrollbar-gutter:stable_both-edges]">
+                <table className="min-w-max w-full border-collapse text-sm">
+                  <thead className="sticky top-0 z-30 bg-card">
+                    <tr className="border-b shadow-[0_1px_2px_rgba(0,0,0,0.05)]">
+                      <th className="sticky left-0 z-40 min-w-[84px] border-r bg-card p-3 text-left text-xs font-bold shadow-[6px_0_14px_-12px_rgba(15,23,42,0.8)] sm:min-w-[96px] md:min-w-[112px] md:p-4 md:text-sm md:shadow-none">
+                        Date
                       </th>
-                    ))}
-                    <th className="min-w-[64px] bg-card p-3 text-right text-xs font-bold sm:min-w-[72px] md:min-w-[80px] md:p-4 md:text-sm">
-                      Total
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y">
-                  {days.map((day, dayIndex) => {
-                    const dateStr = format(day, "yyyy-MM-dd");
-                    const dayLogs = data.mealLogs.filter((log) => log.date === dateStr);
-                    const dayTotal = dayLogs.reduce((sum, log) => sum + log.count, 0);
-                    const isTintedRow = dayIndex % 2 === 1;
-
-                    return (
-                      <tr
-                        key={dateStr}
-                        className={cn(
-                          "hover:bg-muted/50",
-                          isTintedRow && "bg-slate-50/70 md:bg-transparent",
-                        )}
-                      >
-                        <td
-                          className={cn(
-                            "sticky left-0 z-10 border-r p-3 font-medium shadow-[6px_0_14px_-12px_rgba(15,23,42,0.75)] md:bg-card md:p-4 md:shadow-none",
-                            isTintedRow ? "bg-slate-50" : "bg-card",
-                          )}
+                      {data.members.map((member) => (
+                        <th
+                          key={member.id}
+                          className="min-w-[72px] border-r bg-card p-1.5 text-center sm:min-w-[84px] md:min-w-[100px] md:p-2"
                         >
-                          <div className="flex flex-col">
-                            <span className={cn(isSameDay(day, new Date()) && "font-bold text-primary")}>
-                              {format(day, "dd MMM")}
-                            </span>
-                            <span className="text-[9px] text-muted-foreground md:text-[10px]">
-                              {format(day, "EEEE")}
+                          <div className="flex flex-col items-center gap-1 py-0.5 md:py-1">
+                            <Avatar className="h-5 w-5 text-[9px] md:h-6 md:w-6 md:text-[10px]">
+                              <AvatarFallback>{member.avatar}</AvatarFallback>
+                            </Avatar>
+                            <span className="w-14 truncate text-[9px] font-bold uppercase sm:w-16 md:w-20 md:text-[10px]">
+                              {member.name.split(" ")[0]}
                             </span>
                           </div>
-                        </td>
-                        {data.members.map((member) => {
-                          const log = dayLogs.find((entry) => entry.memberId === member.id);
-                          return (
-                            <td
-                              key={member.id}
-                              className="border-r p-2.5 text-center font-mono text-xs sm:p-3 sm:text-sm md:p-4"
-                            >
-                              {log ? formatMealCount(log.count) : "-"}
-                            </td>
-                          );
-                        })}
-                        <td className="bg-card p-3 text-right font-bold text-emerald-600 md:p-4">
-                          {dayTotal > 0 ? formatMealCount(dayTotal) : "-"}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                  <tr className="border-t-2 border-emerald-200 bg-emerald-50/70 md:bg-secondary/20">
-                    <td className="sticky left-0 z-20 min-w-[84px] whitespace-nowrap border-r bg-emerald-50 p-3 font-bold text-emerald-800 shadow-[6px_0_14px_-12px_rgba(15,23,42,0.75)] sm:min-w-[96px] md:min-w-[112px] md:bg-card md:p-4 md:text-foreground md:shadow-none">
-                      Total
-                    </td>
-                    {data.members.map((member) => (
-                      <td
-                        key={member.id}
-                        className="border-r p-2.5 text-center font-bold text-emerald-700 sm:p-3 sm:text-sm md:p-4"
-                      >
-                        {formatMealCount(memberMealTotals.get(member.id) ?? 0)}
+                        </th>
+                      ))}
+                      <th className="min-w-[64px] bg-card p-3 text-right text-xs font-bold sm:min-w-[72px] md:min-w-[80px] md:p-4 md:text-sm">
+                        Total
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y">
+                    {days.map((day, dayIndex) => {
+                      const dateStr = format(day, "yyyy-MM-dd");
+                      const dayLogs = data.mealLogs.filter((log) => log.date === dateStr);
+                      const dayTotal = dayLogs.reduce((sum, log) => sum + log.count, 0);
+                      const isTintedRow = dayIndex % 2 === 1;
+
+                      return (
+                        <tr
+                          key={dateStr}
+                          className={cn(
+                            "hover:bg-muted/50",
+                            isTintedRow && "bg-slate-50/70 md:bg-transparent",
+                          )}
+                        >
+                          <td
+                            className={cn(
+                              "sticky left-0 z-10 border-r p-3 font-medium shadow-[6px_0_14px_-12px_rgba(15,23,42,0.75)] md:bg-card md:p-4 md:shadow-none",
+                              isTintedRow ? "bg-slate-50" : "bg-card",
+                            )}
+                          >
+                            <div className="flex flex-col">
+                              <span className={cn(isSameDay(day, new Date()) && "font-bold text-primary")}>
+                                {format(day, "dd MMM")}
+                              </span>
+                              <span className="text-[9px] text-muted-foreground md:text-[10px]">
+                                {format(day, "EEEE")}
+                              </span>
+                            </div>
+                          </td>
+                          {data.members.map((member) => {
+                            const log = dayLogs.find((entry) => entry.memberId === member.id);
+                            return (
+                              <td
+                                key={member.id}
+                                className="border-r p-2.5 text-center font-mono text-xs sm:p-3 sm:text-sm md:p-4"
+                              >
+                                {log ? formatMealCount(log.count) : "-"}
+                              </td>
+                            );
+                          })}
+                          <td className="bg-card p-3 text-right font-bold text-emerald-600 md:p-4">
+                            {dayTotal > 0 ? formatMealCount(dayTotal) : "-"}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                    <tr className="border-t-2 border-emerald-200 bg-emerald-50/70 md:bg-secondary/20">
+                      <td className="sticky left-0 z-20 min-w-[84px] whitespace-nowrap border-r bg-emerald-50 p-3 font-bold text-emerald-800 shadow-[6px_0_14px_-12px_rgba(15,23,42,0.75)] sm:min-w-[96px] md:min-w-[112px] md:bg-card md:p-4 md:text-foreground md:shadow-none">
+                        Total
                       </td>
-                    ))}
-                    <td className="bg-secondary/20 p-3 text-right font-bold text-emerald-700 md:p-4">
-                      {formatMealCount(data.stats.totalMealsConsumed)}
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
+                      {data.members.map((member) => (
+                        <td
+                          key={member.id}
+                          className="border-r p-2.5 text-center font-bold text-emerald-700 sm:p-3 sm:text-sm md:p-4"
+                        >
+                          {formatMealCount(memberMealTotals.get(member.id) ?? 0)}
+                        </td>
+                      ))}
+                      <td className="bg-secondary/20 p-3 text-right font-bold text-emerald-700 md:p-4">
+                        {formatMealCount(data.stats.totalMealsConsumed)}
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
             </div>
-          </div>
+          )}
         </section>
 
         <section className="space-y-4">
@@ -698,16 +749,17 @@ export default function SharedPage({ token }: { token: string }) {
                   : data.expenses.filter((expense) => expense.type === tab);
               const total = expenses.reduce((sum, expense) => sum + expense.amount, 0);
               const useScrollableExpenseList = expenses.length > 8;
+              const emptyState = getExpenseEmptyState(tab);
 
               return (
                 <TabsContent key={tab} value={tab} className="m-0">
                   <div className="space-y-3">
                     {expenses.length === 0 ? (
-                      <Card>
-                        <CardContent className="py-8 text-center text-sm text-muted-foreground">
-                          No expenses found.
-                        </CardContent>
-                      </Card>
+                      <SectionEmptyState
+                        icon={<ShoppingBag className="h-6 w-6" />}
+                        title={emptyState.title}
+                        message={emptyState.message}
+                      />
                     ) : (
                       <>
                         <div

@@ -178,8 +178,12 @@ export async function registerRoutes(
       throw shareLinkError;
     }
 
-    if (!shareLink || !shareLink.is_enabled) {
-      return res.status(404).json({ message: "Shared view not found." });
+    if (!shareLink) {
+      return res.status(404).json({ message: "This Meal Code does not match an active shared view." });
+    }
+
+    if (!shareLink.is_enabled) {
+      return res.status(404).json({ message: "Sharing is currently disabled for this Meal Code. Ask the manager to enable sharing again." });
     }
 
     const { data: cycle, error: cycleError } = await supabaseAdmin
@@ -197,7 +201,7 @@ export async function registerRoutes(
     }
 
     if (!cycle) {
-      return res.status(404).json({ message: "No shareable cycle found." });
+      return res.status(404).json({ message: "No active or pending cycle is available for this shared view yet." });
     }
 
     const [membersResult, depositsResult, expensesResult, mealLogsResult] = await Promise.all([

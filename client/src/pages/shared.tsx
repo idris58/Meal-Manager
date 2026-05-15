@@ -179,13 +179,8 @@ export function SharedAccessPage() {
     <div className="flex min-h-screen items-center justify-center bg-[radial-gradient(circle_at_top_left,rgba(16,185,129,0.16),transparent_34%),linear-gradient(135deg,#f8fafc_0%,#eefcf6_100%)] px-4 py-8">
       <Card className="w-full max-w-md overflow-hidden border-none shadow-2xl shadow-emerald-100/70">
         <CardHeader className="space-y-5 pb-4">
-          <div className="flex items-start justify-between gap-4">
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-500 text-white shadow-lg shadow-emerald-200">
-              <ChefHat className="h-6 w-6" />
-            </div>
-            <div className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
-              Read only
-            </div>
+          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-500 text-white shadow-lg shadow-emerald-200">
+            <ChefHat className="h-6 w-6" />
           </div>
           <div className="space-y-1">
             <p className="text-sm font-medium uppercase tracking-[0.2em] text-emerald-700">
@@ -194,7 +189,7 @@ export function SharedAccessPage() {
             <CardTitle className="font-heading text-3xl">Enter Access Code</CardTitle>
           </div>
           <p className="text-sm text-muted-foreground">
-            Use the Meal Code shared by the manager to open the read-only cycle view. Full shared links still open directly.
+            Use the Meal Code shared by the manager to open the shared view.
           </p>
         </CardHeader>
         <CardContent className="space-y-4">

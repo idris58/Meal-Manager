@@ -55,7 +55,7 @@ for now apply it only in mobile view. for shared view  meal table
 - Make each message specific enough that the viewer understands what happened.
 
 
-# Fix needed later
+# Fix needed after implementation
 
 ## ✅ 1. Shared view Access Code Entry page Fix
 - Remove the Read only badge from the shared view Access Code Entry page

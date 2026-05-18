@@ -211,7 +211,8 @@ export async function registerRoutes(
       return res.status(404).json({ message: "No active or pending cycle is available for this shared view yet." });
     }
 
-    const [membersResult, depositsResult, expensesResult, mealLogsResult, noticeResult] = await Promise.all([
+    const now = new Date().toISOString();
+    const [membersResult, depositsResult, expensesResult, mealLogsResult, noticeResult, noticeCleanupResult] = await Promise.all([
         supabaseAdmin
           .from("members")
           .select("id, name, avatar")
@@ -239,10 +240,15 @@ export async function registerRoutes(
         .from("notices")
         .select("id, title, content, expires_at")
         .eq("user_id", shareLink.user_id)
-        .gt("expires_at", new Date().toISOString())
+        .gt("expires_at", now)
         .order("created_at", { ascending: false })
         .limit(1)
         .maybeSingle(),
+      supabaseAdmin
+        .from("notices")
+        .delete()
+        .eq("user_id", shareLink.user_id)
+        .lte("expires_at", now),
     ]);
 
     if (membersResult.error) {
@@ -259,6 +265,10 @@ export async function registerRoutes(
 
     if (mealLogsResult.error) {
       throw mealLogsResult.error;
+    }
+
+    if (noticeCleanupResult.error) {
+      console.error("Error deleting expired notices:", noticeCleanupResult.error);
     }
 
     // noticeResult error is non-fatal — if the table doesn't exist yet, just skip

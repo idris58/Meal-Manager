@@ -435,11 +435,20 @@ function NoticeSettingsCard() {
     const load = async () => {
       setLoading(true);
       try {
+        const now = new Date().toISOString();
+        const { error: cleanupError } = await supabase
+          .from('notices')
+          .delete()
+          .eq('user_id', user.id)
+          .lte('expires_at', now);
+
+        if (cleanupError) throw cleanupError;
+
         const { data, error: fetchError } = await supabase
           .from('notices')
           .select('id, title, content, expires_at')
           .eq('user_id', user.id)
-          .gt('expires_at', new Date().toISOString())
+          .gt('expires_at', now)
           .order('created_at', { ascending: false })
           .limit(1)
           .maybeSingle();
@@ -457,6 +466,38 @@ function NoticeSettingsCard() {
     void load();
     return () => { active = false; };
   }, [user?.id]);
+
+  useEffect(() => {
+    if (!activeNotice || !user?.id) return;
+
+    const delay = parseISO(activeNotice.expires_at).getTime() - Date.now();
+    if (delay <= 0) {
+      setActiveNotice(null);
+      resetNoticeForm();
+      return;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      void supabase
+        .from('notices')
+        .delete()
+        .eq('id', activeNotice.id)
+        .eq('user_id', user.id)
+        .then(({ error: deleteError }) => {
+          if (deleteError) {
+            console.error('Error deleting expired notice:', deleteError);
+            return;
+          }
+
+          setActiveNotice((currentNotice) =>
+            currentNotice?.id === activeNotice.id ? null : currentNotice,
+          );
+          resetNoticeForm();
+        });
+    }, delay);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [activeNotice, user?.id]);
 
   const handleSubmitNotice = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();

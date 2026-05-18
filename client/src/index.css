@@ -125,11 +125,11 @@
 .notice-ticker-track {
   display: inline-flex;
   white-space: nowrap;
-  animation: marquee-scroll 32s linear infinite;
+  min-width: max-content;
+  animation: marquee-scroll 25s linear infinite;
   will-change: transform;
 }
 
 .notice-ticker-track:hover {
   animation-play-state: paused;
 }
-

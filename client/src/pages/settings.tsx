@@ -474,6 +474,12 @@ function NoticeSettingsCard() {
     setMessage(null);
 
     try {
+      await supabase
+        .from('notices')
+        .update({ expires_at: new Date().toISOString() })
+        .eq('user_id', user.id)
+        .gt('expires_at', new Date().toISOString());
+
       const { data, error: insertError } = await supabase
         .from('notices')
         .insert([{
@@ -531,7 +537,7 @@ function NoticeSettingsCard() {
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center gap-2">
           <Megaphone className="h-5 w-5 text-amber-500" />
-          Shared View Notice
+          Post Notice
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-5">
@@ -549,7 +555,9 @@ function NoticeSettingsCard() {
                 <p className="text-sm text-slate-700">{activeNotice.content}</p>
                 <p className="text-xs text-amber-700">
                   Expires {formatDistanceToNow(parseISO(activeNotice.expires_at), { addSuffix: true })}
-                  {' '}({format(parseISO(activeNotice.expires_at), 'dd MMM yyyy, hh:mm a')})
+                  <span className="text-amber-600">
+                    {' '}({format(parseISO(activeNotice.expires_at), 'dd MMM yyyy, hh:mm a')})
+                  </span>
                 </p>
               </div>
               <Button
@@ -625,7 +633,7 @@ function NoticeSettingsCard() {
                     : 'border-border bg-background text-muted-foreground hover:bg-muted'
                 }`}
               >
-                Specific Date & Time
+                Specific date & time
               </button>
             </div>
 

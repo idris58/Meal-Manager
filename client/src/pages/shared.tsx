@@ -128,19 +128,27 @@ function SectionEmptyState({
 }
 
 function NoticeTicker({ notice }: { notice: NonNullable<SharedPayload["activeNotice"]> }) {
-  const text = `📢  ${notice.title}: ${notice.content}`;
+  const text = `${notice.title}: ${notice.content}`;
   // Duplicate the text so the scroll appears seamless
-  const repeated = `${text}\u2002\u2002\u2002\u2002\u2002\u2002\u2002${text}\u2002\u2002\u2002\u2002\u2002\u2002\u2002`;
+  const repeated = `${text}\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0`;
 
   return (
     <div
-      className="overflow-hidden border-b bg-gradient-to-r from-amber-500 to-orange-500 py-2.5"
+      className="flex overflow-hidden border-y border-amber-200 bg-amber-50 text-amber-950"
       aria-live="polite"
       aria-label={`Notice: ${notice.title}`}
     >
-      <div className="notice-ticker-track text-sm font-medium text-white">
-        <span>{repeated}</span>
-        <span aria-hidden="true">{repeated}</span>
+      <div className="z-10 flex shrink-0 items-center gap-2 border-r border-amber-200 bg-amber-100 px-4 py-2.5 text-sm font-bold text-amber-900 shadow-[8px_0_18px_-16px_rgba(120,53,15,0.8)]">
+        <Megaphone className="h-4 w-4" />
+        Notice
+      </div>
+      <div className="relative min-w-0 flex-1 overflow-hidden py-2.5">
+        <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-8 bg-gradient-to-r from-amber-50 to-transparent" />
+        <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-8 bg-gradient-to-l from-amber-50 to-transparent" />
+        <div className="notice-ticker-track pl-10 text-sm font-medium">
+          <span>{repeated}</span>
+          <span aria-hidden="true">{repeated}</span>
+        </div>
       </div>
     </div>
   );

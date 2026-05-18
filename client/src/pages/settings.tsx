@@ -1,9 +1,11 @@
 import { useEffect, useState, type FormEvent } from 'react';
-import { Copy, ExternalLink, RefreshCcw, Save, Share2 } from 'lucide-react';
+import { Copy, ExternalLink, Megaphone, RefreshCcw, Save, Share2, Trash2 } from 'lucide-react';
+import { addHours, format, formatDistanceToNow, isPast, parseISO } from 'date-fns';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { useAuth } from '@/lib/auth-context';
 import { useMeal } from '@/lib/meal-context';
 import { supabase } from '@/lib/supabase';
@@ -391,6 +393,290 @@ function ShareSettingsCard() {
   );
 }
 
+type ActiveNotice = {
+  id: string;
+  title: string;
+  content: string;
+  expires_at: string;
+};
+
+function NoticeSettingsCard() {
+  const { user } = useAuth();
+  const [activeNotice, setActiveNotice] = useState<ActiveNotice | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [working, setWorking] = useState(false);
+  const [message, setMessage] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  // Form state
+  const [title, setTitle] = useState('');
+  const [content, setContent] = useState('');
+  const [expiryMode, setExpiryMode] = useState<'hours' | 'datetime'>('hours');
+  const [durationHours, setDurationHours] = useState('24');
+  const [expiryDatetime, setExpiryDatetime] = useState('');
+
+  // Build the minimum value for datetime-local (now)
+  const minDatetime = format(new Date(), "yyyy-MM-dd'T'HH:mm");
+
+  useEffect(() => {
+    if (!user?.id) return;
+    let active = true;
+
+    const load = async () => {
+      setLoading(true);
+      try {
+        const { data, error: fetchError } = await supabase
+          .from('notices')
+          .select('id, title, content, expires_at')
+          .eq('user_id', user.id)
+          .gt('expires_at', new Date().toISOString())
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (fetchError) throw fetchError;
+        if (active) setActiveNotice(data as ActiveNotice | null);
+      } catch (err) {
+        console.error('Error loading notice:', err);
+        if (active) setError('Could not load notices. Make sure the notices table exists in Supabase.');
+      } finally {
+        if (active) setLoading(false);
+      }
+    };
+
+    void load();
+    return () => { active = false; };
+  }, [user?.id]);
+
+  const handlePost = async (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!user?.id) return;
+
+    const trimTitle = title.trim();
+    const trimContent = content.trim();
+
+    if (!trimTitle) { setError('Title is required.'); return; }
+    if (!trimContent) { setError('Content is required.'); return; }
+
+    let expiresAt: Date;
+    if (expiryMode === 'hours') {
+      const hours = parseFloat(durationHours);
+      if (isNaN(hours) || hours <= 0) { setError('Enter a valid duration in hours.'); return; }
+      expiresAt = addHours(new Date(), hours);
+    } else {
+      if (!expiryDatetime) { setError('Select an expiry date and time.'); return; }
+      expiresAt = parseISO(expiryDatetime);
+      if (isPast(expiresAt)) { setError('Expiry must be in the future.'); return; }
+    }
+
+    setWorking(true);
+    setError(null);
+    setMessage(null);
+
+    try {
+      const { data, error: insertError } = await supabase
+        .from('notices')
+        .insert([{
+          user_id: user.id,
+          title: trimTitle,
+          content: trimContent,
+          expires_at: expiresAt.toISOString(),
+        }])
+        .select('id, title, content, expires_at')
+        .single();
+
+      if (insertError) throw insertError;
+
+      setActiveNotice(data as ActiveNotice);
+      setTitle('');
+      setContent('');
+      setDurationHours('24');
+      setExpiryDatetime('');
+      setMessage('Notice posted! It will appear in the shared view immediately.');
+    } catch (err) {
+      console.error('Error posting notice:', err);
+      setError('Unable to post the notice right now.');
+    } finally {
+      setWorking(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!activeNotice || !user?.id) return;
+    setWorking(true);
+    setError(null);
+    setMessage(null);
+
+    try {
+      const { error: deleteError } = await supabase
+        .from('notices')
+        .delete()
+        .eq('id', activeNotice.id)
+        .eq('user_id', user.id);
+
+      if (deleteError) throw deleteError;
+
+      setActiveNotice(null);
+      setMessage('Notice removed from the shared view.');
+    } catch (err) {
+      console.error('Error deleting notice:', err);
+      setError('Unable to delete the notice right now.');
+    } finally {
+      setWorking(false);
+    }
+  };
+
+  return (
+    <Card>
+      <CardHeader className="pb-3">
+        <CardTitle className="flex items-center gap-2">
+          <Megaphone className="h-5 w-5 text-amber-500" />
+          Shared View Notice
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-5">
+        <p className="text-sm text-muted-foreground">
+          Post a notice that appears as a running ticker below the shared view header. Only one notice is active at a time.
+        </p>
+
+        {/* Active notice preview */}
+        {!loading && activeNotice && (
+          <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 space-y-2">
+            <div className="flex items-start justify-between gap-3">
+              <div className="space-y-0.5 min-w-0">
+                <p className="text-xs font-semibold uppercase tracking-wide text-amber-700">Active Notice</p>
+                <p className="font-semibold text-slate-900 truncate">{activeNotice.title}</p>
+                <p className="text-sm text-slate-700">{activeNotice.content}</p>
+                <p className="text-xs text-amber-700">
+                  Expires {formatDistanceToNow(parseISO(activeNotice.expires_at), { addSuffix: true })}
+                  {' '}({format(parseISO(activeNotice.expires_at), 'dd MMM yyyy, hh:mm a')})
+                </p>
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="shrink-0 gap-1.5 border-red-200 text-red-600 hover:bg-red-50"
+                onClick={handleDelete}
+                disabled={working}
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+                Remove
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {loading && (
+          <p className="text-sm text-muted-foreground">Loading notice status...</p>
+        )}
+
+        {/* Post new notice form */}
+        <form onSubmit={handlePost} className="space-y-4">
+          <p className="text-sm font-medium text-slate-700">
+            {activeNotice ? 'Post a new notice (replaces the active one):' : 'Post a notice:'}
+          </p>
+
+          <div className="space-y-2">
+            <label className="text-sm font-medium" htmlFor="notice-title">Title</label>
+            <Input
+              id="notice-title"
+              placeholder="e.g. Important update for all members"
+              value={title}
+              onChange={(e) => { setTitle(e.target.value); setError(null); }}
+              disabled={working}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-sm font-medium" htmlFor="notice-content">Content</label>
+            <Textarea
+              id="notice-content"
+              placeholder="Write your notice message here..."
+              rows={3}
+              value={content}
+              onChange={(e) => { setContent(e.target.value); setError(null); }}
+              disabled={working}
+              className="resize-none"
+            />
+          </div>
+
+          {/* Expiry mode toggle */}
+          <div className="space-y-3">
+            <p className="text-sm font-medium">Expiry</p>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => setExpiryMode('hours')}
+                className={`flex-1 rounded-lg border px-3 py-2 text-sm font-medium transition-colors ${
+                  expiryMode === 'hours'
+                    ? 'border-primary bg-primary/10 text-primary'
+                    : 'border-border bg-background text-muted-foreground hover:bg-muted'
+                }`}
+              >
+                Duration (hours)
+              </button>
+              <button
+                type="button"
+                onClick={() => setExpiryMode('datetime')}
+                className={`flex-1 rounded-lg border px-3 py-2 text-sm font-medium transition-colors ${
+                  expiryMode === 'datetime'
+                    ? 'border-primary bg-primary/10 text-primary'
+                    : 'border-border bg-background text-muted-foreground hover:bg-muted'
+                }`}
+              >
+                Specific Date & Time
+              </button>
+            </div>
+
+            {expiryMode === 'hours' ? (
+              <div className="flex items-center gap-2">
+                <Input
+                  id="notice-duration"
+                  type="number"
+                  min="0.5"
+                  step="0.5"
+                  placeholder="24"
+                  value={durationHours}
+                  onChange={(e) => { setDurationHours(e.target.value); setError(null); }}
+                  disabled={working}
+                  className="w-32"
+                />
+                <span className="text-sm text-muted-foreground">hours from now</span>
+              </div>
+            ) : (
+              <Input
+                id="notice-expiry"
+                type="datetime-local"
+                min={minDatetime}
+                value={expiryDatetime}
+                onChange={(e) => { setExpiryDatetime(e.target.value); setError(null); }}
+                disabled={working}
+              />
+            )}
+          </div>
+
+          <Button type="submit" className="gap-2 bg-amber-500 hover:bg-amber-600 text-white" disabled={working}>
+            <Megaphone className="h-4 w-4" />
+            {working ? 'Posting...' : 'Post Notice'}
+          </Button>
+        </form>
+
+        {message && (
+          <p className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
+            {message}
+          </p>
+        )}
+        {error && (
+          <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+            {error}
+          </p>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
 export default function SettingsPage() {
   return (
     <div className="space-y-6 pb-20">
@@ -403,6 +689,7 @@ export default function SettingsPage() {
 
       <CurrentCycleSettingsCard />
       <ShareSettingsCard />
+      <NoticeSettingsCard />
     </div>
   );
 }

@@ -115,3 +115,21 @@
 .glass-card {
   @apply bg-card/80 backdrop-blur-md border border-border/50 shadow-sm;
 }
+
+/* Notice ticker marquee animation */
+@keyframes marquee-scroll {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+.notice-ticker-track {
+  display: inline-flex;
+  white-space: nowrap;
+  animation: marquee-scroll 32s linear infinite;
+  will-change: transform;
+}
+
+.notice-ticker-track:hover {
+  animation-play-state: paused;
+}
+

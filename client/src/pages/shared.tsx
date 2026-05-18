@@ -4,6 +4,7 @@ import {
   ChefHat,
   KeyRound,
   Loader2,
+  Megaphone,
   Share2,
   ShoppingBag,
   Users,
@@ -69,6 +70,12 @@ type SharedPayload = {
   members: SharedMember[];
   expenses: SharedExpense[];
   mealLogs: SharedMealLog[];
+  activeNotice: {
+    id: string;
+    title: string;
+    content: string;
+    expiresAt: string;
+  } | null;
 };
 
 function formatCurrency(amount: number) {
@@ -117,6 +124,25 @@ function SectionEmptyState({
         <p className="mt-1 max-w-md text-sm text-muted-foreground">{message}</p>
       </CardContent>
     </Card>
+  );
+}
+
+function NoticeTicker({ notice }: { notice: NonNullable<SharedPayload["activeNotice"]> }) {
+  const text = `📢  ${notice.title}: ${notice.content}`;
+  // Duplicate the text so the scroll appears seamless
+  const repeated = `${text}\u2002\u2002\u2002\u2002\u2002\u2002\u2002${text}\u2002\u2002\u2002\u2002\u2002\u2002\u2002`;
+
+  return (
+    <div
+      className="overflow-hidden border-b bg-gradient-to-r from-amber-500 to-orange-500 py-2.5"
+      aria-live="polite"
+      aria-label={`Notice: ${notice.title}`}
+    >
+      <div className="notice-ticker-track text-sm font-medium text-white">
+        <span>{repeated}</span>
+        <span aria-hidden="true">{repeated}</span>
+      </div>
+    </div>
   );
 }
 
@@ -433,6 +459,9 @@ export default function SharedPage({ token }: { token: string }) {
           </div>
         </div>
       </div>
+
+      {/* Notice ticker — shown below header when there is an active notice */}
+      {data.activeNotice && <NoticeTicker notice={data.activeNotice} />}
 
       <div className="mx-auto max-w-6xl space-y-8 px-4 py-6 md:px-8">
         <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">

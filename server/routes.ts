@@ -155,6 +155,13 @@ function buildSharedPayload(
   };
 }
 
+type NoticeRow = {
+  id: string;
+  title: string;
+  content: string;
+  expires_at: string;
+};
+
 export async function registerRoutes(
   httpServer: Server,
   app: Express
@@ -204,7 +211,7 @@ export async function registerRoutes(
       return res.status(404).json({ message: "No active or pending cycle is available for this shared view yet." });
     }
 
-    const [membersResult, depositsResult, expensesResult, mealLogsResult] = await Promise.all([
+    const [membersResult, depositsResult, expensesResult, mealLogsResult, noticeResult] = await Promise.all([
         supabaseAdmin
           .from("members")
           .select("id, name, avatar")
@@ -228,6 +235,14 @@ export async function registerRoutes(
         .eq("user_id", shareLink.user_id)
         .eq("cycle_id", cycle.id)
         .order("date", { ascending: false }),
+      supabaseAdmin
+        .from("notices")
+        .select("id, title, content, expires_at")
+        .eq("user_id", shareLink.user_id)
+        .gt("expires_at", new Date().toISOString())
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle(),
     ]);
 
     if (membersResult.error) {
@@ -246,15 +261,22 @@ export async function registerRoutes(
       throw mealLogsResult.error;
     }
 
-    return res.json(
-      buildSharedPayload(
+    // noticeResult error is non-fatal — if the table doesn't exist yet, just skip
+    const noticeRow = noticeResult.error ? null : (noticeResult.data as NoticeRow | null);
+    const activeNotice = noticeRow
+      ? { id: noticeRow.id, title: noticeRow.title, content: noticeRow.content, expiresAt: noticeRow.expires_at }
+      : null;
+
+    return res.json({
+      ...buildSharedPayload(
         cycle,
         membersResult.data || [],
         depositsResult.data || [],
         expensesResult.data || [],
         mealLogsResult.data || [],
       ),
-    );
+      activeNotice,
+    });
   });
 
   return httpServer;

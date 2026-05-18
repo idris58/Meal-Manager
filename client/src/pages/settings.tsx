@@ -594,49 +594,6 @@ function NoticeSettingsCard() {
           Post a notice that appears as a running ticker below the shared view header. Only one notice is active at a time.
         </p>
 
-        {/* Active notice preview */}
-        {!loading && activeNotice && (
-          <div className="space-y-2 rounded-xl border border-emerald-200 bg-emerald-50 p-4">
-            <div className="flex items-start justify-between gap-3">
-              <div className="min-w-0 space-y-0.5">
-                <p className="text-xs font-semibold uppercase tracking-wide text-emerald-700">Active Notice</p>
-                <p className="font-semibold text-slate-900 truncate">{activeNotice.title}</p>
-                <p className="text-sm text-slate-700">{activeNotice.content}</p>
-                <p className="text-xs text-emerald-700">
-                  Expires {formatDistanceToNow(parseISO(activeNotice.expires_at), { addSuffix: true })}
-                  <span className="text-emerald-600">
-                    {' '}({format(parseISO(activeNotice.expires_at), 'dd MMM yyyy, hh:mm a')})
-                  </span>
-                </p>
-              </div>
-              <div className="flex shrink-0 flex-wrap justify-end gap-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  className="gap-1.5 border-emerald-200 text-emerald-700 hover:bg-emerald-100"
-                  onClick={handleStartEdit}
-                  disabled={working}
-                >
-                  <Pencil className="h-3.5 w-3.5" />
-                  Edit
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  className="gap-1.5 border-red-200 text-red-600 hover:bg-red-50"
-                  onClick={handleDelete}
-                  disabled={working}
-                >
-                  <Trash2 className="h-3.5 w-3.5" />
-                  Remove
-                </Button>
-              </div>
-            </div>
-          </div>
-        )}
-
         {loading && (
           <p className="text-sm text-muted-foreground">Loading notice status...</p>
         )}
@@ -748,6 +705,49 @@ function NoticeSettingsCard() {
             ) : null}
           </div>
         </form>
+
+        {/* Active notice preview */}
+        {!loading && activeNotice && (
+          <div className="space-y-2 rounded-xl border border-emerald-200 bg-emerald-50 p-4">
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0 space-y-0.5">
+                <p className="text-xs font-semibold uppercase tracking-wide text-emerald-700">Active Notice</p>
+                <p className="truncate font-semibold text-slate-900">{activeNotice.title}</p>
+                <p className="text-sm text-slate-700">{activeNotice.content}</p>
+                <p className="text-xs text-emerald-700">
+                  Expires {formatDistanceToNow(parseISO(activeNotice.expires_at), { addSuffix: true })}
+                  <span className="text-emerald-600">
+                    {' '}({format(parseISO(activeNotice.expires_at), 'dd MMM yyyy, hh:mm a')})
+                  </span>
+                </p>
+              </div>
+              <div className="flex shrink-0 flex-wrap justify-end gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="gap-1.5 border-emerald-200 text-emerald-700 hover:bg-emerald-100"
+                  onClick={handleStartEdit}
+                  disabled={working}
+                >
+                  <Pencil className="h-3.5 w-3.5" />
+                  Edit
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="gap-1.5 border-red-200 text-red-600 hover:bg-red-50"
+                  onClick={handleDelete}
+                  disabled={working}
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                  Remove
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {message && (
           <p className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">

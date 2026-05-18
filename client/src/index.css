@@ -123,11 +123,23 @@
 }
 
 .notice-ticker-track {
-  display: inline-flex;
+  display: flex;
   white-space: nowrap;
-  min-width: max-content;
+  width: max-content;
   animation: marquee-scroll 25s linear infinite;
   will-change: transform;
+}
+
+.notice-ticker-group {
+  display: flex;
+  align-items: center;
+  min-width: max-content;
+}
+
+.notice-ticker-item {
+  display: inline-flex;
+  align-items: center;
+  padding-right: 4rem;
 }
 
 .notice-ticker-track:hover {

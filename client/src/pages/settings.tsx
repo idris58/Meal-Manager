@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent } from 'react';
-import { Copy, ExternalLink, Megaphone, RefreshCcw, Save, Share2, Trash2 } from 'lucide-react';
+import { Copy, ExternalLink, Megaphone, Pencil, RefreshCcw, Save, Share2, Trash2 } from 'lucide-react';
 import { addHours, format, formatDistanceToNow, isPast, parseISO } from 'date-fns';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -407,6 +407,7 @@ function NoticeSettingsCard() {
   const [working, setWorking] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [isEditingNotice, setIsEditingNotice] = useState(false);
 
   // Form state
   const [title, setTitle] = useState('');
@@ -417,6 +418,15 @@ function NoticeSettingsCard() {
 
   // Build the minimum value for datetime-local (now)
   const minDatetime = format(new Date(), "yyyy-MM-dd'T'HH:mm");
+
+  const resetNoticeForm = () => {
+    setTitle('');
+    setContent('');
+    setExpiryMode('hours');
+    setDurationHours('24');
+    setExpiryDatetime('');
+    setIsEditingNotice(false);
+  };
 
   useEffect(() => {
     if (!user?.id) return;
@@ -448,7 +458,7 @@ function NoticeSettingsCard() {
     return () => { active = false; };
   }, [user?.id]);
 
-  const handlePost = async (e: FormEvent<HTMLFormElement>) => {
+  const handleSubmitNotice = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!user?.id) return;
 
@@ -474,11 +484,33 @@ function NoticeSettingsCard() {
     setMessage(null);
 
     try {
+      if (isEditingNotice && activeNotice) {
+        const { data, error: updateError } = await supabase
+          .from('notices')
+          .update({
+            title: trimTitle,
+            content: trimContent,
+            expires_at: expiresAt.toISOString(),
+          })
+          .eq('id', activeNotice.id)
+          .eq('user_id', user.id)
+          .select('id, title, content, expires_at')
+          .single();
+
+        if (updateError) throw updateError;
+
+        setActiveNotice(data as ActiveNotice);
+        resetNoticeForm();
+        setMessage('Notice updated. The shared view will show the new text immediately.');
+        return;
+      }
+
+      const now = new Date().toISOString();
       await supabase
         .from('notices')
-        .update({ expires_at: new Date().toISOString() })
+        .update({ expires_at: now })
         .eq('user_id', user.id)
-        .gt('expires_at', new Date().toISOString());
+        .gt('expires_at', now);
 
       const { data, error: insertError } = await supabase
         .from('notices')
@@ -494,17 +526,33 @@ function NoticeSettingsCard() {
       if (insertError) throw insertError;
 
       setActiveNotice(data as ActiveNotice);
-      setTitle('');
-      setContent('');
-      setDurationHours('24');
-      setExpiryDatetime('');
+      resetNoticeForm();
       setMessage('Notice posted! It will appear in the shared view immediately.');
     } catch (err) {
       console.error('Error posting notice:', err);
-      setError('Unable to post the notice right now.');
+      setError(isEditingNotice ? 'Unable to update the notice right now.' : 'Unable to post the notice right now.');
     } finally {
       setWorking(false);
     }
+  };
+
+  const handleStartEdit = () => {
+    if (!activeNotice) return;
+
+    setTitle(activeNotice.title);
+    setContent(activeNotice.content);
+    setExpiryMode('datetime');
+    setExpiryDatetime(format(parseISO(activeNotice.expires_at), "yyyy-MM-dd'T'HH:mm"));
+    setDurationHours('24');
+    setIsEditingNotice(true);
+    setMessage(null);
+    setError(null);
+  };
+
+  const handleCancelEdit = () => {
+    resetNoticeForm();
+    setError(null);
+    setMessage(null);
   };
 
   const handleDelete = async () => {
@@ -523,6 +571,7 @@ function NoticeSettingsCard() {
       if (deleteError) throw deleteError;
 
       setActiveNotice(null);
+      resetNoticeForm();
       setMessage('Notice removed from the shared view.');
     } catch (err) {
       console.error('Error deleting notice:', err);
@@ -536,7 +585,7 @@ function NoticeSettingsCard() {
     <Card>
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center gap-2">
-          <Megaphone className="h-5 w-5 text-amber-500" />
+          <Megaphone className="h-5 w-5 text-emerald-500" />
           Post Notice
         </CardTitle>
       </CardHeader>
@@ -547,30 +596,43 @@ function NoticeSettingsCard() {
 
         {/* Active notice preview */}
         {!loading && activeNotice && (
-          <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 space-y-2">
+          <div className="space-y-2 rounded-xl border border-emerald-200 bg-emerald-50 p-4">
             <div className="flex items-start justify-between gap-3">
-              <div className="space-y-0.5 min-w-0">
-                <p className="text-xs font-semibold uppercase tracking-wide text-amber-700">Active Notice</p>
+              <div className="min-w-0 space-y-0.5">
+                <p className="text-xs font-semibold uppercase tracking-wide text-emerald-700">Active Notice</p>
                 <p className="font-semibold text-slate-900 truncate">{activeNotice.title}</p>
                 <p className="text-sm text-slate-700">{activeNotice.content}</p>
-                <p className="text-xs text-amber-700">
+                <p className="text-xs text-emerald-700">
                   Expires {formatDistanceToNow(parseISO(activeNotice.expires_at), { addSuffix: true })}
-                  <span className="text-amber-600">
+                  <span className="text-emerald-600">
                     {' '}({format(parseISO(activeNotice.expires_at), 'dd MMM yyyy, hh:mm a')})
                   </span>
                 </p>
               </div>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className="shrink-0 gap-1.5 border-red-200 text-red-600 hover:bg-red-50"
-                onClick={handleDelete}
-                disabled={working}
-              >
-                <Trash2 className="h-3.5 w-3.5" />
-                Remove
-              </Button>
+              <div className="flex shrink-0 flex-wrap justify-end gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="gap-1.5 border-emerald-200 text-emerald-700 hover:bg-emerald-100"
+                  onClick={handleStartEdit}
+                  disabled={working}
+                >
+                  <Pencil className="h-3.5 w-3.5" />
+                  Edit
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="gap-1.5 border-red-200 text-red-600 hover:bg-red-50"
+                  onClick={handleDelete}
+                  disabled={working}
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                  Remove
+                </Button>
+              </div>
             </div>
           </div>
         )}
@@ -580,9 +642,13 @@ function NoticeSettingsCard() {
         )}
 
         {/* Post new notice form */}
-        <form onSubmit={handlePost} className="space-y-4">
+        <form onSubmit={handleSubmitNotice} className="space-y-4">
           <p className="text-sm font-medium text-slate-700">
-            {activeNotice ? 'Post a new notice (replaces the active one):' : 'Post a notice:'}
+            {isEditingNotice
+              ? 'Edit active notice:'
+              : activeNotice
+                ? 'Post a new notice (replaces the active one):'
+                : 'Post a notice:'}
           </p>
 
           <div className="space-y-2">
@@ -664,10 +730,23 @@ function NoticeSettingsCard() {
             )}
           </div>
 
-          <Button type="submit" className="gap-2 bg-amber-500 hover:bg-amber-600 text-white" disabled={working}>
-            <Megaphone className="h-4 w-4" />
-            {working ? 'Posting...' : 'Post Notice'}
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <Button type="submit" className="gap-2" disabled={working}>
+              <Megaphone className="h-4 w-4" />
+              {working
+                ? isEditingNotice
+                  ? 'Saving...'
+                  : 'Posting...'
+                : isEditingNotice
+                  ? 'Save Notice'
+                  : 'Post Notice'}
+            </Button>
+            {isEditingNotice ? (
+              <Button type="button" variant="outline" onClick={handleCancelEdit} disabled={working}>
+                Cancel Edit
+              </Button>
+            ) : null}
+          </div>
         </form>
 
         {message && (

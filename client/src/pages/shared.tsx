@@ -129,8 +129,12 @@ function SectionEmptyState({
 
 function NoticeTicker({ notice }: { notice: NonNullable<SharedPayload["activeNotice"]> }) {
   const text = `${notice.title}: ${notice.content}`;
-  // Duplicate the text so the scroll appears seamless
-  const repeated = `${text}\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0`;
+  const renderTickerItems = (group: string) =>
+    Array.from({ length: 10 }, (_, index) => (
+      <span key={`${group}-${index}`} className="notice-ticker-item">
+        {text}
+      </span>
+    ));
 
   return (
     <div
@@ -144,10 +148,11 @@ function NoticeTicker({ notice }: { notice: NonNullable<SharedPayload["activeNot
       </div>
       <div className="relative min-w-0 flex-1 overflow-hidden py-2.5">
         <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-8 bg-gradient-to-r from-amber-50 to-transparent" />
-        <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-8 bg-gradient-to-l from-amber-50 to-transparent" />
         <div className="notice-ticker-track pl-10 text-sm font-medium">
-          <span>{repeated}</span>
-          <span aria-hidden="true">{repeated}</span>
+          <div className="notice-ticker-group">{renderTickerItems("primary")}</div>
+          <div className="notice-ticker-group" aria-hidden="true">
+            {renderTickerItems("copy")}
+          </div>
         </div>
       </div>
     </div>

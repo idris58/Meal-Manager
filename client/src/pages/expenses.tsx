@@ -23,7 +23,7 @@ import { Calendar as CalendarIcon } from 'lucide-react';
 const expenseSchema = z.object({
   amount: z.preprocess(
     (value) => value === '' ? undefined : value,
-    z.coerce.number().min(1, 'Amount is required'),
+    z.coerce.number({ invalid_type_error: 'Amount is required' }).refine((value) => value !== 0, 'Amount cannot be zero'),
   ),
   description: z.string().min(2, 'Description is required'),
   type: z.enum(['meal', 'fixed']),
@@ -142,8 +142,9 @@ function ExpenseEditor({
               <FormLabel>Amount</FormLabel>
               <FormControl>
                 <Input
-                  type="number"
-                  placeholder="0.00"
+                  type="text"
+                  inputMode="decimal"
+                  placeholder="100"
                   {...field}
                   value={field.value ?? ''}
                 />

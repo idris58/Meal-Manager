@@ -101,7 +101,7 @@ function PendingExpenseEditor({
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     const parsedAmount = parseFloat(amount);
-    if (!description.trim() || !paidBy.trim() || isNaN(parsedAmount) || parsedAmount <= 0) return;
+    if (!description.trim() || !paidBy.trim() || isNaN(parsedAmount) || parsedAmount === 0) return;
 
     if (expense) {
       await updateExpense(expense.id, {
@@ -156,7 +156,13 @@ function PendingExpenseEditor({
       </div>
       <div className="space-y-2">
         <label className="text-sm font-medium">Amount</label>
-        <Input type="number" value={amount} onChange={(event) => setAmount(event.target.value)} placeholder="0.00" />
+        <Input
+          type="text"
+          inputMode="decimal"
+          value={amount}
+          onChange={(event) => setAmount(event.target.value)}
+          placeholder="100"
+        />
       </div>
       <div className="space-y-2">
         <label className="text-sm font-medium">Who Shopped?</label>

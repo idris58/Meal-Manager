@@ -24,3 +24,4 @@ Add a new NoticeSettingsCard component below ShareSettingsCard. It allows the ma
 - Remove right-side fade from the shared notice ticker
 - Align notice settings colors with the app theme
 - Add edit mode for the active shared-view notice
+- Delete expired notices from database

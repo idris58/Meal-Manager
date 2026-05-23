@@ -354,6 +354,41 @@ export default function SharedPage({ token }: { token: string }) {
     });
   }, [data?.members]);
 
+  useEffect(() => {
+    if (!data?.activeNotice) {
+      return;
+    }
+
+    const delay = parseISO(data.activeNotice.expiresAt).getTime() - Date.now();
+
+    if (delay <= 0) {
+      setData((currentData) =>
+        currentData
+          ? {
+              ...currentData,
+              activeNotice: null,
+            }
+          : currentData,
+      );
+      return;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      setData((currentData) => {
+        if (!currentData || currentData.activeNotice?.id !== data.activeNotice?.id) {
+          return currentData;
+        }
+
+        return {
+          ...currentData,
+          activeNotice: null,
+        };
+      });
+    }, delay);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [data?.activeNotice]);
+
   const days = useMemo(() => {
     if (!data || data.mealLogs.length === 0) {
       return [startOfDay(new Date())];

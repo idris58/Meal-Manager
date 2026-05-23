@@ -1,4 +1,4 @@
-import type { Express } from "express";
+import type { Express, Response } from "express";
 import { type Server } from "http";
 
 import { assertSupabaseAdmin } from "./supabase-admin";
@@ -162,10 +162,157 @@ type NoticeRow = {
   expires_at: string;
 };
 
+type ActiveNotice = {
+  id: string;
+  title: string;
+  content: string;
+  expiresAt: string;
+} | null;
+
+const shareEventClients = new Map<string, Set<Response>>();
+
+function addShareEventClient(userId: string, res: Response) {
+  const clients = shareEventClients.get(userId) ?? new Set<Response>();
+  clients.add(res);
+  shareEventClients.set(userId, clients);
+}
+
+function removeShareEventClient(userId: string, res: Response) {
+  const clients = shareEventClients.get(userId);
+  if (!clients) {
+    return;
+  }
+
+  clients.delete(res);
+  if (clients.size === 0) {
+    shareEventClients.delete(userId);
+  }
+}
+
+function sendShareEvent(res: Response, event: string, payload: unknown) {
+  res.write(`event: ${event}\n`);
+  res.write(`data: ${JSON.stringify(payload)}\n\n`);
+}
+
+function broadcastNoticeUpdate(userId: string, activeNotice: ActiveNotice) {
+  const clients = shareEventClients.get(userId);
+  if (!clients) {
+    return;
+  }
+
+  for (const client of Array.from(clients)) {
+    sendShareEvent(client, "notice", { activeNotice });
+  }
+}
+
+async function getActiveNoticeForUser(userId: string): Promise<ActiveNotice> {
+  const supabaseAdmin = assertSupabaseAdmin();
+  const now = new Date().toISOString();
+
+  const { error: cleanupError } = await supabaseAdmin
+    .from("notices")
+    .delete()
+    .eq("user_id", userId)
+    .lte("expires_at", now);
+
+  if (cleanupError) {
+    console.error("Error deleting expired notices:", cleanupError);
+  }
+
+  const { data, error } = await supabaseAdmin
+    .from("notices")
+    .select("id, title, content, expires_at")
+    .eq("user_id", userId)
+    .gt("expires_at", now)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (error) {
+    console.error("Error loading active notice:", error);
+    return null;
+  }
+
+  const noticeRow = data as NoticeRow | null;
+  return noticeRow
+    ? {
+        id: noticeRow.id,
+        title: noticeRow.title,
+        content: noticeRow.content,
+        expiresAt: noticeRow.expires_at,
+      }
+    : null;
+}
+
 export async function registerRoutes(
   httpServer: Server,
   app: Express
 ): Promise<Server> {
+  app.get("/api/share/:token/events", async (req, res) => {
+    const token = String(req.params.token || "").trim();
+
+    if (!token) {
+      return res.status(400).json({ message: "Missing share token." });
+    }
+
+    const supabaseAdmin = assertSupabaseAdmin();
+
+    const { data: shareLink, error: shareLinkError } = await supabaseAdmin
+      .from("share_links")
+      .select("user_id, is_enabled")
+      .eq("token", token)
+      .maybeSingle();
+
+    if (shareLinkError) {
+      throw shareLinkError;
+    }
+
+    if (!shareLink || !shareLink.is_enabled) {
+      return res.status(404).json({ message: "This Meal Code is not available for live updates." });
+    }
+
+    res.writeHead(200, {
+      "Content-Type": "text/event-stream",
+      "Cache-Control": "no-cache, no-transform",
+      Connection: "keep-alive",
+      "X-Accel-Buffering": "no",
+    });
+
+    addShareEventClient(shareLink.user_id, res);
+    sendShareEvent(res, "connected", { ok: true });
+
+    const heartbeatId = setInterval(() => {
+      sendShareEvent(res, "heartbeat", { at: new Date().toISOString() });
+    }, 30000);
+
+    req.on("close", () => {
+      clearInterval(heartbeatId);
+      removeShareEventClient(shareLink.user_id, res);
+      res.end();
+    });
+  });
+
+  app.post("/api/notices/broadcast", async (req, res) => {
+    const authHeader = req.get("authorization") ?? "";
+    const token = authHeader.match(/^Bearer\s+(.+)$/i)?.[1];
+
+    if (!token) {
+      return res.status(401).json({ message: "Missing authorization token." });
+    }
+
+    const supabaseAdmin = assertSupabaseAdmin();
+    const { data, error } = await supabaseAdmin.auth.getUser(token);
+
+    if (error || !data.user) {
+      return res.status(401).json({ message: "Invalid authorization token." });
+    }
+
+    const activeNotice = await getActiveNoticeForUser(data.user.id);
+    broadcastNoticeUpdate(data.user.id, activeNotice);
+
+    return res.json({ activeNotice });
+  });
+
   app.get("/api/share/:token", async (req, res) => {
     const token = String(req.params.token || "").trim();
 

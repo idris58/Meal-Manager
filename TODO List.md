@@ -25,3 +25,5 @@ Add a new NoticeSettingsCard component below ShareSettingsCard. It allows the ma
 - Align notice settings colors with the app theme
 - Add edit mode for the active shared-view notice
 - Delete expired notices from database
+- Add automatic notice expiration handling
+- Add live shared notice updates with SSE

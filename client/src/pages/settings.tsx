@@ -428,6 +428,30 @@ function NoticeSettingsCard() {
     setIsEditingNotice(false);
   };
 
+  const broadcastNoticeUpdate = async () => {
+    const { data } = await supabase.auth.getSession();
+    const accessToken = data.session?.access_token;
+
+    if (!accessToken) {
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/notices/broadcast', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      });
+
+      if (!response.ok) {
+        console.error('Error broadcasting notice update:', await response.text());
+      }
+    } catch (err) {
+      console.error('Error broadcasting notice update:', err);
+    }
+  };
+
   useEffect(() => {
     if (!user?.id) return;
     let active = true;
@@ -493,6 +517,7 @@ function NoticeSettingsCard() {
             currentNotice?.id === activeNotice.id ? null : currentNotice,
           );
           resetNoticeForm();
+          void broadcastNoticeUpdate();
         });
     }, delay);
 
@@ -542,6 +567,7 @@ function NoticeSettingsCard() {
 
         setActiveNotice(data as ActiveNotice);
         resetNoticeForm();
+        void broadcastNoticeUpdate();
         setMessage('Notice updated. The shared view will show the new text immediately.');
         return;
       }
@@ -568,6 +594,7 @@ function NoticeSettingsCard() {
 
       setActiveNotice(data as ActiveNotice);
       resetNoticeForm();
+      void broadcastNoticeUpdate();
       setMessage('Notice posted! It will appear in the shared view immediately.');
     } catch (err) {
       console.error('Error posting notice:', err);
@@ -613,6 +640,7 @@ function NoticeSettingsCard() {
 
       setActiveNotice(null);
       resetNoticeForm();
+      void broadcastNoticeUpdate();
       setMessage('Notice removed from the shared view.');
     } catch (err) {
       console.error('Error deleting notice:', err);

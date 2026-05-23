@@ -339,6 +339,33 @@ export default function SharedPage({ token }: { token: string }) {
   }, [token]);
 
   useEffect(() => {
+    const events = new EventSource(`/api/share/${encodeURIComponent(token)}/events`);
+
+    const handleNoticeUpdate = (event: MessageEvent) => {
+      try {
+        const payload = JSON.parse(event.data) as Pick<SharedPayload, "activeNotice">;
+        setData((currentData) =>
+          currentData
+            ? {
+                ...currentData,
+                activeNotice: payload.activeNotice,
+              }
+            : currentData,
+        );
+      } catch (caughtError) {
+        console.error("Error parsing notice update:", caughtError);
+      }
+    };
+
+    events.addEventListener("notice", handleNoticeUpdate);
+
+    return () => {
+      events.removeEventListener("notice", handleNoticeUpdate);
+      events.close();
+    };
+  }, [token]);
+
+  useEffect(() => {
     if (!data?.members.length) {
       setSelectedMemberId("");
       setSummaryMode("all");

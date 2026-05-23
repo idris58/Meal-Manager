@@ -169,6 +169,10 @@ type ActiveNotice = {
   expiresAt: string;
 } | null;
 
+type SharedPayload = ReturnType<typeof buildSharedPayload> & {
+  activeNotice: ActiveNotice;
+};
+
 const shareEventClients = new Map<string, Set<Response>>();
 
 function addShareEventClient(userId: string, res: Response) {
@@ -202,6 +206,17 @@ function broadcastNoticeUpdate(userId: string, activeNotice: ActiveNotice) {
 
   for (const client of Array.from(clients)) {
     sendShareEvent(client, "notice", { activeNotice });
+  }
+}
+
+function broadcastSharedPayload(userId: string, data: SharedPayload | null) {
+  const clients = shareEventClients.get(userId);
+  if (!clients) {
+    return;
+  }
+
+  for (const client of Array.from(clients)) {
+    sendShareEvent(client, "shared-data", { data });
   }
 }
 
@@ -242,6 +257,100 @@ async function getActiveNoticeForUser(userId: string): Promise<ActiveNotice> {
         expiresAt: noticeRow.expires_at,
       }
     : null;
+}
+
+async function getSharedPayloadForUser(userId: string): Promise<SharedPayload | null> {
+  const supabaseAdmin = assertSupabaseAdmin();
+
+  const { data: cycle, error: cycleError } = await supabaseAdmin
+    .from("cycles")
+    .select("id, name, status, started_at, closed_at, members_snapshot")
+    .eq("user_id", userId)
+    .in("status", ["pending", "active"])
+    .order("closed_at", { ascending: false, nullsFirst: false })
+    .order("started_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (cycleError) {
+    throw cycleError;
+  }
+
+  if (!cycle) {
+    return null;
+  }
+
+  const [membersResult, depositsResult, expensesResult, mealLogsResult, activeNotice] =
+    await Promise.all([
+      supabaseAdmin
+        .from("members")
+        .select("id, name, avatar")
+        .eq("user_id", userId)
+        .order("created_at", { ascending: true }),
+      supabaseAdmin
+        .from("cycle_deposits")
+        .select("id, cycle_id, member_id, amount")
+        .eq("user_id", userId)
+        .eq("cycle_id", cycle.id)
+        .order("created_at", { ascending: true }),
+      supabaseAdmin
+        .from("expenses")
+        .select("id, cycle_id, amount, description, type, date, paid_by")
+        .eq("user_id", userId)
+        .eq("cycle_id", cycle.id)
+        .order("date", { ascending: false }),
+      supabaseAdmin
+        .from("meal_logs")
+        .select("id, cycle_id, date, member_id, count")
+        .eq("user_id", userId)
+        .eq("cycle_id", cycle.id)
+        .order("date", { ascending: false }),
+      getActiveNoticeForUser(userId),
+    ]);
+
+  if (membersResult.error) {
+    throw membersResult.error;
+  }
+
+  if (depositsResult.error) {
+    throw depositsResult.error;
+  }
+
+  if (expensesResult.error) {
+    throw expensesResult.error;
+  }
+
+  if (mealLogsResult.error) {
+    throw mealLogsResult.error;
+  }
+
+  return {
+    ...buildSharedPayload(
+      cycle,
+      membersResult.data || [],
+      depositsResult.data || [],
+      expensesResult.data || [],
+      mealLogsResult.data || [],
+    ),
+    activeNotice,
+  };
+}
+
+async function getAuthenticatedUserId(authHeader: string | undefined): Promise<string | null> {
+  const token = authHeader?.match(/^Bearer\s+(.+)$/i)?.[1];
+
+  if (!token) {
+    return null;
+  }
+
+  const supabaseAdmin = assertSupabaseAdmin();
+  const { data, error } = await supabaseAdmin.auth.getUser(token);
+
+  if (error || !data.user) {
+    return null;
+  }
+
+  return data.user.id;
 }
 
 export async function registerRoutes(
@@ -293,24 +402,29 @@ export async function registerRoutes(
   });
 
   app.post("/api/notices/broadcast", async (req, res) => {
-    const authHeader = req.get("authorization") ?? "";
-    const token = authHeader.match(/^Bearer\s+(.+)$/i)?.[1];
+    const userId = await getAuthenticatedUserId(req.get("authorization"));
 
-    if (!token) {
-      return res.status(401).json({ message: "Missing authorization token." });
-    }
-
-    const supabaseAdmin = assertSupabaseAdmin();
-    const { data, error } = await supabaseAdmin.auth.getUser(token);
-
-    if (error || !data.user) {
+    if (!userId) {
       return res.status(401).json({ message: "Invalid authorization token." });
     }
 
-    const activeNotice = await getActiveNoticeForUser(data.user.id);
-    broadcastNoticeUpdate(data.user.id, activeNotice);
+    const activeNotice = await getActiveNoticeForUser(userId);
+    broadcastNoticeUpdate(userId, activeNotice);
 
     return res.json({ activeNotice });
+  });
+
+  app.post("/api/share/broadcast", async (req, res) => {
+    const userId = await getAuthenticatedUserId(req.get("authorization"));
+
+    if (!userId) {
+      return res.status(401).json({ message: "Invalid authorization token." });
+    }
+
+    const data = await getSharedPayloadForUser(userId);
+    broadcastSharedPayload(userId, data);
+
+    return res.json({ data });
   });
 
   app.get("/api/share/:token", async (req, res) => {
@@ -340,100 +454,14 @@ export async function registerRoutes(
       return res.status(404).json({ message: "Sharing is currently disabled for this Meal Code. Ask the manager to enable sharing again." });
     }
 
-    const { data: cycle, error: cycleError } = await supabaseAdmin
-      .from("cycles")
-      .select("id, name, status, started_at, closed_at, members_snapshot")
-      .eq("user_id", shareLink.user_id)
-      .in("status", ["pending", "active"])
-      .order("closed_at", { ascending: false, nullsFirst: false })
-      .order("started_at", { ascending: false })
-      .limit(1)
-      .maybeSingle();
+    const data = await getSharedPayloadForUser(shareLink.user_id);
 
-    if (cycleError) {
-      throw cycleError;
-    }
-
-    if (!cycle) {
+    if (!data) {
       return res.status(404).json({ message: "No active or pending cycle is available for this shared view yet." });
     }
 
-    const now = new Date().toISOString();
-    const [membersResult, depositsResult, expensesResult, mealLogsResult, noticeResult, noticeCleanupResult] = await Promise.all([
-        supabaseAdmin
-          .from("members")
-          .select("id, name, avatar")
-          .eq("user_id", shareLink.user_id)
-          .order("created_at", { ascending: true }),
-      supabaseAdmin
-        .from("cycle_deposits")
-        .select("id, cycle_id, member_id, amount")
-        .eq("user_id", shareLink.user_id)
-        .eq("cycle_id", cycle.id)
-        .order("created_at", { ascending: true }),
-      supabaseAdmin
-        .from("expenses")
-        .select("id, cycle_id, amount, description, type, date, paid_by")
-        .eq("user_id", shareLink.user_id)
-        .eq("cycle_id", cycle.id)
-        .order("date", { ascending: false }),
-      supabaseAdmin
-        .from("meal_logs")
-        .select("id, cycle_id, date, member_id, count")
-        .eq("user_id", shareLink.user_id)
-        .eq("cycle_id", cycle.id)
-        .order("date", { ascending: false }),
-      supabaseAdmin
-        .from("notices")
-        .select("id, title, content, expires_at")
-        .eq("user_id", shareLink.user_id)
-        .gt("expires_at", now)
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .maybeSingle(),
-      supabaseAdmin
-        .from("notices")
-        .delete()
-        .eq("user_id", shareLink.user_id)
-        .lte("expires_at", now),
-    ]);
+    return res.json(data);
 
-    if (membersResult.error) {
-      throw membersResult.error;
-    }
-
-    if (depositsResult.error) {
-      throw depositsResult.error;
-    }
-
-    if (expensesResult.error) {
-      throw expensesResult.error;
-    }
-
-    if (mealLogsResult.error) {
-      throw mealLogsResult.error;
-    }
-
-    if (noticeCleanupResult.error) {
-      console.error("Error deleting expired notices:", noticeCleanupResult.error);
-    }
-
-    // noticeResult error is non-fatal — if the table doesn't exist yet, just skip
-    const noticeRow = noticeResult.error ? null : (noticeResult.data as NoticeRow | null);
-    const activeNotice = noticeRow
-      ? { id: noticeRow.id, title: noticeRow.title, content: noticeRow.content, expiresAt: noticeRow.expires_at }
-      : null;
-
-    return res.json({
-      ...buildSharedPayload(
-        cycle,
-        membersResult.data || [],
-        depositsResult.data || [],
-        expensesResult.data || [],
-        mealLogsResult.data || [],
-      ),
-      activeNotice,
-    });
   });
 
   return httpServer;

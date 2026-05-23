@@ -259,6 +259,30 @@ function getMealLogAction(changes: ChangelogChange[]): ChangelogAction {
   return 'update';
 }
 
+async function broadcastSharedUpdate() {
+  const { data } = await supabase.auth.getSession();
+  const accessToken = data.session?.access_token;
+
+  if (!accessToken) {
+    return;
+  }
+
+  try {
+    const response = await fetch('/api/share/broadcast', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    });
+
+    if (!response.ok) {
+      console.error('Error broadcasting shared update:', await response.text());
+    }
+  } catch (error) {
+    console.error('Error broadcasting shared update:', error);
+  }
+}
+
 export function MealProvider({ children }: { children: ReactNode }) {
   const [memberRoster, setMemberRoster] = useState<Member[]>([]);
   const [allExpenses, setAllExpenses] = useState<Expense[]>([]);
@@ -624,6 +648,7 @@ export function MealProvider({ children }: { children: ReactNode }) {
         buildSnapshotChange('name', 'Name', data.name),
       ],
     });
+    void broadcastSharedUpdate();
   };
 
   const updateMember = async (id: string, updates: Partial<Member>) => {
@@ -675,6 +700,7 @@ export function MealProvider({ children }: { children: ReactNode }) {
       title: `Updated member ${existingMember.name}`,
       changes,
     });
+    void broadcastSharedUpdate();
   };
 
   const removeMember = async (id: string) => {
@@ -708,6 +734,7 @@ export function MealProvider({ children }: { children: ReactNode }) {
         buildSnapshotChange('name', 'Name', existingMember.name),
       ],
     });
+    void broadcastSharedUpdate();
   };
 
   const addExpense = async (
@@ -766,6 +793,7 @@ export function MealProvider({ children }: { children: ReactNode }) {
         buildSnapshotChange('date', 'Date', data.date),
       ],
     });
+    void broadcastSharedUpdate();
   };
 
   const updateExpense = async (
@@ -831,6 +859,7 @@ export function MealProvider({ children }: { children: ReactNode }) {
       title: `Updated ${existingExpense.type} expense`,
       changes,
     });
+    void broadcastSharedUpdate();
   };
 
   const deleteExpense = async (id: string) => {
@@ -865,6 +894,7 @@ export function MealProvider({ children }: { children: ReactNode }) {
         buildSnapshotChange('date', 'Date', existingExpense.date),
       ],
     });
+    void broadcastSharedUpdate();
   };
 
   const addDeposit = async (memberId: string, amount: number, cycleId?: string, note?: string) => {
@@ -917,6 +947,7 @@ export function MealProvider({ children }: { children: ReactNode }) {
         ...(data.note ? [buildSnapshotChange('note', 'Note', data.note)] : []),
       ],
     });
+    void broadcastSharedUpdate();
   };
 
   const saveMealLogs = async (
@@ -1043,6 +1074,7 @@ export function MealProvider({ children }: { children: ReactNode }) {
         ...sortedMealLogChanges,
       ],
     });
+    void broadcastSharedUpdate();
   };
 
   const logMeal = async (memberId: string, count: number, dateStr: string, cycleId?: string) => {
@@ -1088,6 +1120,7 @@ export function MealProvider({ children }: { children: ReactNode }) {
     setCycles((prev) => prev.map((cycle) => (
       cycle.id === activeCycle.id ? { ...cycle, name: trimmedName } : cycle
     )));
+    void broadcastSharedUpdate();
   };
 
   const closeActiveCycle = async () => {
@@ -1152,6 +1185,7 @@ export function MealProvider({ children }: { children: ReactNode }) {
           : cycle
       )),
     ]);
+    void broadcastSharedUpdate();
   };
 
   const markCycleClosed = async (cycleId: string) => {
@@ -1187,6 +1221,7 @@ export function MealProvider({ children }: { children: ReactNode }) {
       cycle.id === cycleId ? { ...cycle, status: 'closed', finalizedAt } : cycle
     )));
     setAllChangelogEntries((prev) => prev.filter((entry) => entry.cycleId !== cycleId));
+    void broadcastSharedUpdate();
   };
 
   const deleteCycle = async (cycleId: string) => {

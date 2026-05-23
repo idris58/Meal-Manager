@@ -357,10 +357,28 @@ export default function SharedPage({ token }: { token: string }) {
       }
     };
 
+    const handleSharedDataUpdate = (event: MessageEvent) => {
+      try {
+        const payload = JSON.parse(event.data) as { data: SharedPayload | null };
+
+        if (!payload.data) {
+          setError("No active or pending cycle is available for this shared view yet.");
+          return;
+        }
+
+        setError(null);
+        setData(payload.data);
+      } catch (caughtError) {
+        console.error("Error parsing shared data update:", caughtError);
+      }
+    };
+
     events.addEventListener("notice", handleNoticeUpdate);
+    events.addEventListener("shared-data", handleSharedDataUpdate);
 
     return () => {
       events.removeEventListener("notice", handleNoticeUpdate);
+      events.removeEventListener("shared-data", handleSharedDataUpdate);
       events.close();
     };
   }, [token]);

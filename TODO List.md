@@ -1,0 +1,2 @@
+- Live shared dashboard updates
+    - now have SSE for notices. extend it so shared view also updates immediately when meals, expenses, deposits, or cycle status change.

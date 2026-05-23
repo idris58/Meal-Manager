@@ -437,7 +437,7 @@ function NoticeSettingsCard() {
     }
 
     try {
-      const response = await fetch('/api/notices/broadcast', {
+      const response = await fetch('/api/share/broadcast', {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${accessToken}`,

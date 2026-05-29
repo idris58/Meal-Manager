@@ -163,6 +163,9 @@ function PendingExpenseEditor({
           onChange={(event) => setAmount(event.target.value)}
           placeholder="100"
         />
+        <p className="text-xs text-muted-foreground">
+          Negative amounts are allowed here for pending-cycle corrections.
+        </p>
       </div>
       <div className="space-y-2">
         <label className="text-sm font-medium">Who Shopped?</label>

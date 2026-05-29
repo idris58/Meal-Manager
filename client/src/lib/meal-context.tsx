@@ -611,6 +611,10 @@ export function MealProvider({ children }: { children: ReactNode }) {
     return requestedCycleId ?? activeCycle?.id ?? null;
   };
 
+  const allowsNegativeExpenseAmount = (cycleId: string) => {
+    return cycles.find((cycle) => cycle.id === cycleId)?.status === 'pending';
+  };
+
   const addMember = async (name: string) => {
     if (!userId) return;
     const targetCycleId = activeCycle?.id ?? null;
@@ -749,6 +753,10 @@ export function MealProvider({ children }: { children: ReactNode }) {
 
     const targetCycleId = getRequiredCycleId(cycleId);
     if (!targetCycleId) return;
+    if (amount < 0 && !allowsNegativeExpenseAmount(targetCycleId)) {
+      console.error('Negative expense amounts are only allowed for pending-cycle corrections.');
+      return;
+    }
 
     const { data, error } = await supabase
       .from('expenses')
@@ -809,6 +817,10 @@ export function MealProvider({ children }: { children: ReactNode }) {
     if (!userId) return;
     const existingExpense = allExpenses.find((expense) => expense.id === id);
     if (!existingExpense) return;
+    if (updates.amount < 0 && !allowsNegativeExpenseAmount(existingExpense.cycleId)) {
+      console.error('Negative expense amounts are only allowed for pending-cycle corrections.');
+      return;
+    }
 
     const changes = [
       buildUpdateChange('amount', 'Amount', existingExpense.amount, updates.amount),

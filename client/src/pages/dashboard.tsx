@@ -21,7 +21,7 @@ import { format } from 'date-fns';
 const expenseSchema = z.object({
   amount: z.preprocess(
     (value) => value === '' ? undefined : value,
-    z.coerce.number({ invalid_type_error: 'Amount is required' }).refine((value) => value !== 0, 'Amount cannot be zero'),
+    z.coerce.number({ invalid_type_error: 'Amount is required' }).positive('Amount must be greater than zero'),
   ),
   description: z.string().min(2, 'Description is required'),
   type: z.enum(['meal', 'fixed']),

@@ -21,6 +21,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { usePwaInstall } from "@/lib/pwa";
 import { cn } from "@/lib/utils";
@@ -243,6 +244,40 @@ function SharedInstallCard({ compact = false }: { compact?: boolean }) {
 
           {message ? <p className="text-sm text-emerald-800">{message}</p> : null}
         </div>
+      </div>
+    </div>
+  );
+}
+
+function SharedDashboardSkeleton() {
+  return (
+    <div className="min-h-screen bg-background">
+      <div className="border-b bg-card/80">
+        <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4 md:px-8">
+          <div className="flex items-center gap-3">
+            <Skeleton className="h-10 w-10 rounded-2xl" />
+            <div className="space-y-2">
+              <Skeleton className="h-3 w-24" />
+              <Skeleton className="h-5 w-44" />
+            </div>
+          </div>
+          <Skeleton className="h-9 w-32" />
+        </div>
+      </div>
+      <div className="mx-auto max-w-6xl space-y-8 px-4 py-6 md:px-8">
+        <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+          <Skeleton className="h-36 rounded-lg xl:col-span-2" />
+          <Skeleton className="h-36 rounded-lg" />
+          <Skeleton className="h-36 rounded-lg" />
+        </section>
+        <Skeleton className="h-80 rounded-lg" />
+        <div className="grid gap-4 md:grid-cols-2">
+          <Skeleton className="h-64 rounded-lg" />
+          <Skeleton className="h-64 rounded-lg" />
+        </div>
+        <p className="text-center text-sm text-muted-foreground">
+          Loading shared dashboard...
+        </p>
       </div>
     </div>
   );
@@ -568,16 +603,7 @@ export default function SharedPage({ token }: { token: string }) {
   }, [data, selectedMemberId, summaryMode]);
 
   if (loading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-background px-4">
-        <div className="text-center">
-          <p className="text-lg font-semibold text-slate-900">Loading shared dashboard...</p>
-          <p className="mt-2 text-sm text-muted-foreground">
-            Fetching the latest current-cycle meal data.
-          </p>
-        </div>
-      </div>
-    );
+    return <SharedDashboardSkeleton />;
   }
 
   if (error || !data) {

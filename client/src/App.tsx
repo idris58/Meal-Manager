@@ -3,7 +3,7 @@ import { Route, Switch, useLocation, useRoute } from "wouter";
 
 import { Layout } from "@/components/layout";
 import { ToastAction } from "@/components/ui/toast";
-import { Spinner } from "@/components/ui/spinner";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Toaster } from "@/components/ui/toaster";
 import { useAuth, AuthProvider } from "@/lib/auth-context";
 import { toast } from "@/hooks/use-toast";
@@ -21,18 +21,46 @@ import NotFound from "@/pages/not-found";
 import Settings from "@/pages/settings";
 import SharedPage, { SharedAccessPage } from "@/pages/shared";
 
+function AppLoadingSkeleton({ message }: { message: string }) {
+  return (
+    <div className="min-h-screen bg-background">
+      <div className="flex min-h-screen">
+        <aside className="hidden w-64 border-r bg-card p-6 md:block">
+          <div className="mb-8 flex items-center gap-3">
+            <Skeleton className="h-8 w-8 rounded-2xl" />
+            <Skeleton className="h-5 w-28" />
+          </div>
+          <div className="space-y-3">
+            {Array.from({ length: 6 }, (_, index) => (
+              <Skeleton key={index} className="h-11 w-full" />
+            ))}
+          </div>
+        </aside>
+        <main className="flex-1 p-4 md:p-8">
+          <div className="mx-auto max-w-5xl space-y-6">
+            <div className="space-y-2">
+              <Skeleton className="h-8 w-48" />
+              <Skeleton className="h-4 w-72 max-w-full" />
+            </div>
+            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+              <Skeleton className="h-36 rounded-lg xl:col-span-2" />
+              <Skeleton className="h-36 rounded-lg" />
+              <Skeleton className="h-36 rounded-lg" />
+            </div>
+            <Skeleton className="h-72 rounded-lg" />
+            <p className="text-center text-sm text-muted-foreground">{message}</p>
+          </div>
+        </main>
+      </div>
+    </div>
+  );
+}
+
 function Router() {
   const { loading } = useMeal();
 
   if (loading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-background">
-        <div className="space-y-4 text-center">
-          <Spinner className="mx-auto h-8 w-8 text-primary" />
-          <p className="text-muted-foreground">Loading your meal data...</p>
-        </div>
-      </div>
-    );
+    return <AppLoadingSkeleton message="Loading your meal data..." />;
   }
 
   return (
@@ -204,14 +232,9 @@ function AppShell() {
 
   if (loading || !authLinkResolved) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-background">
-        <div className="space-y-4 text-center">
-          <Spinner className="mx-auto h-8 w-8 text-primary" />
-          <p className="text-muted-foreground">
-            {authLinkResolved ? "Checking your session..." : "Preparing your reset link..."}
-          </p>
-        </div>
-      </div>
+      <AppLoadingSkeleton
+        message={authLinkResolved ? "Checking your session..." : "Preparing your reset link..."}
+      />
     );
   }
 

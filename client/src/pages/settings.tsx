@@ -5,6 +5,7 @@ import { addHours, format, formatDistanceToNow, isPast, parseISO } from 'date-fn
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Skeleton } from '@/components/ui/skeleton';
 import { Textarea } from '@/components/ui/textarea';
 import { useAuth } from '@/lib/auth-context';
 import { useMeal } from '@/lib/meal-context';
@@ -294,13 +295,13 @@ function ShareSettingsCard() {
           <div className="flex items-center justify-between gap-3">
             <div>
               <p className="text-sm font-medium">Sharing status</p>
-              <p className="text-sm text-muted-foreground">
-                {loading
-                  ? 'Loading share settings...'
-                  : config?.is_enabled
-                    ? 'Enabled'
-                    : 'Disabled'}
-              </p>
+              {loading ? (
+                <Skeleton className="mt-2 h-4 w-24" />
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  {config?.is_enabled ? 'Enabled' : 'Disabled'}
+                </p>
+              )}
             </div>
             <Button
               variant={config?.is_enabled ? 'outline' : 'default'}
@@ -664,7 +665,11 @@ function NoticeSettingsCard() {
         </p>
 
         {loading && (
-          <p className="text-sm text-muted-foreground">Loading notice status...</p>
+          <div className="space-y-2 rounded-xl border bg-secondary/20 p-4">
+            <Skeleton className="h-4 w-32" />
+            <Skeleton className="h-4 w-full" />
+            <Skeleton className="h-4 w-2/3" />
+          </div>
         )}
 
         {/* Post new notice form */}

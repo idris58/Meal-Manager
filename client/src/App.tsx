@@ -126,27 +126,27 @@ function AppShell() {
 
   useEffect(() => {
     if (isSharedLandingRoute) {
-      document.title = "Meal Code - MealManager";
+      document.title = "Meal Code - MealTrack";
       return;
     }
 
     if (isSharedRoute) {
-      document.title = "Shared View - MealManager";
+      document.title = "Shared View - MealTrack";
       return;
     }
 
     const pageTitleMap: Record<string, string> = {
-      "/": "Dashboard - MealManager",
-      "/members": "Members - MealManager",
-      "/expenses": "Expenses - MealManager",
-      "/meals": "Meals - MealManager",
-      "/history": "History - MealManager",
-      "/changelog": "Changelog - MealManager",
-      "/settings": "Settings - MealManager",
-      "/auth": isRecoveryFlow ? "Reset Password - MealManager" : "Authentication - MealManager",
+      "/": "Dashboard - MealTrack",
+      "/members": "Members - MealTrack",
+      "/expenses": "Expenses - MealTrack",
+      "/meals": "Meals - MealTrack",
+      "/history": "History - MealTrack",
+      "/changelog": "Changelog - MealTrack",
+      "/settings": "Settings - MealTrack",
+      "/auth": isRecoveryFlow ? "Reset Password - MealTrack" : "Authentication - MealTrack",
     };
 
-    document.title = pageTitleMap[location] ?? "MealManager";
+    document.title = pageTitleMap[location] ?? "MealTrack";
   }, [isRecoveryFlow, isSharedLandingRoute, isSharedRoute, location]);
 
   useEffect(() => {

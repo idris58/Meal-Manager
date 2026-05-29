@@ -59,7 +59,7 @@ function SettlementForm({
   return (
     <form onSubmit={handleSubmit} className="space-y-4 pt-4">
       <p className="text-sm text-muted-foreground">
-        Positive amount means this member paid money to the meal. Negative amount means the meal manager returned money to this member.
+        Positive amount means this member paid money to the meal. Negative amount means the manager returned money to this member.
       </p>
       <div className="space-y-2">
         <label className="text-sm font-medium">Amount</label>

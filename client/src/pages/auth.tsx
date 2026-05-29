@@ -353,7 +353,7 @@ export default function AuthPage() {
               </div>
               <div>
                 <p className="text-sm font-medium uppercase tracking-[0.2em] text-emerald-700">
-                  MealManager
+                  MealTrack
                 </p>
                 <CardTitle className="mt-1 text-2xl text-slate-900">
                   {title}

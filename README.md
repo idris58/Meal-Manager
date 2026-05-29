@@ -1,4 +1,4 @@
-# Meal Management System
+# MealTrack
 
 A meal management app for shared living or mess-style meal tracking. It supports member deposits, meal logs, expenses, cycle closing with pending settlement, authentication with Supabase, and public read-only share links.
 

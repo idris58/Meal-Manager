@@ -20,8 +20,8 @@ export default defineConfig({
         "opengraph.jpg",
       ],
       manifest: {
-        name: "Meal Manager",
-        short_name: "Meal Manager",
+        name: "MealTrack",
+        short_name: "MealTrack",
         description: "A professional, mobile-first Meal Management System for shared living environments.",
         start_url: "/",
         scope: "/",

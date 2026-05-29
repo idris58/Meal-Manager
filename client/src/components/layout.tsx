@@ -52,7 +52,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
         <Link href="/">
           <div className="flex cursor-pointer items-center gap-2">
             <ChefHat className="h-6 w-6 text-primary" />
-            <span className="font-heading font-bold text-lg text-primary">MealManager</span>
+            <span className="font-heading font-bold text-lg text-primary">MealTrack</span>
           </div>
         </Link>
         <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
@@ -67,7 +67,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
                 <Link href="/">
                   <div className="flex cursor-pointer items-center gap-2" onClick={() => setIsMobileMenuOpen(false)}>
                     <ChefHat className="h-6 w-6 text-primary" />
-                    <span className="font-heading font-bold text-xl">MealManager</span>
+                    <span className="font-heading font-bold text-xl">MealTrack</span>
                   </div>
                 </Link>
               </div>
@@ -113,7 +113,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
           <Link href="/">
             <div className="flex cursor-pointer items-center gap-2">
               <ChefHat className="h-8 w-8 text-primary" />
-              <span className="font-heading font-bold text-xl text-primary">MealManager</span>
+              <span className="font-heading font-bold text-xl text-primary">MealTrack</span>
             </div>
           </Link>
         </div>

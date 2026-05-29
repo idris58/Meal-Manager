@@ -314,7 +314,7 @@ function InstallAppCard() {
     const result = await promptInstall();
 
     if (result.outcome === 'accepted') {
-      setMessage('Install prompt accepted. Finish the browser install flow to add MealManager.');
+      setMessage('Install prompt accepted. Finish the browser install flow to add MealTrack.');
       return;
     }
 
@@ -331,7 +331,7 @@ function InstallAppCard() {
       </CardHeader>
       <CardContent className="space-y-4">
         <p className="text-sm text-muted-foreground">
-          Install MealManager on your phone or desktop for a faster, app-like experience with home screen access.
+          Install MealTrack on your phone or desktop for a faster, app-like experience with home screen access.
         </p>
 
         <div className="rounded-xl border bg-secondary/30 p-4">
@@ -346,7 +346,7 @@ function InstallAppCard() {
         {!isIos ? (
           <Button className="w-full gap-2" onClick={handleInstall}>
             <Download className="h-4 w-4" />
-            Install MealManager
+            Install MealTrack
           </Button>
         ) : (
           <p className="rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-sm text-blue-700">

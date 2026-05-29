@@ -18,8 +18,10 @@ export default defineConfig({
         "icon-192.png",
         "icon-512.png",
         "opengraph.jpg",
+        "shared-manifest.webmanifest",
       ],
       manifest: {
+        id: "/",
         name: "MealTrack",
         short_name: "MealTrack",
         description: "A professional, mobile-first Meal Management System for shared living environments.",
@@ -48,7 +50,7 @@ export default defineConfig({
       },
       workbox: {
         cleanupOutdatedCaches: true,
-        globPatterns: ["**/*.{js,css,html,png,jpg,jpeg,svg,woff2}"],
+        globPatterns: ["**/*.{js,css,html,png,jpg,jpeg,svg,webmanifest,woff2}"],
         navigateFallback: "/index.html",
         navigateFallbackDenylist: [/^\/api\//],
       },

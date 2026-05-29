@@ -2,6 +2,7 @@ import { FormEvent, useEffect, useMemo, useState, type ReactNode } from "react";
 import {
   ArrowLeftRight,
   ChefHat,
+  Download,
   KeyRound,
   Loader2,
   Megaphone,
@@ -21,7 +22,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { usePwaInstall } from "@/lib/pwa";
 import { cn } from "@/lib/utils";
+
+const LAST_SHARED_MEAL_CODE_KEY = "mealtrack:last-shared-meal-code";
 
 type SharedMember = {
   id: string;
@@ -180,11 +184,92 @@ function getExpenseEmptyState(tab: "all" | "meal" | "fixed") {
   };
 }
 
+function SharedInstallCard({ compact = false }: { compact?: boolean }) {
+  const { canInstall, isInstalled, isIos, promptInstall } = usePwaInstall();
+  const [message, setMessage] = useState<string | null>(null);
+
+  if (isInstalled || (!canInstall && !isIos)) {
+    return null;
+  }
+
+  const handleInstall = async () => {
+    const result = await promptInstall();
+
+    if (result.outcome === "accepted") {
+      setMessage("Install prompt accepted. Finish the browser install flow to add MealTrack Shared.");
+      return;
+    }
+
+    setMessage("Install was dismissed. You can try again later.");
+  };
+
+  if (compact) {
+    if (isIos) {
+      return null;
+    }
+
+    return (
+      <Button variant="outline" size="sm" className="gap-2" onClick={handleInstall} disabled={!canInstall}>
+        <Download className="h-4 w-4" />
+        Install
+      </Button>
+    );
+  }
+
+  return (
+    <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4">
+      <div className="flex items-start gap-3">
+        <div className="rounded-lg bg-emerald-500 p-2 text-white">
+          <Download className="h-4 w-4" />
+        </div>
+        <div className="min-w-0 flex-1 space-y-3">
+          <div>
+            <p className="font-medium text-emerald-950">Install MealTrack Shared</p>
+            <p className="mt-1 text-sm text-emerald-800">
+              Add the shared view to your home screen for quick read-only access.
+            </p>
+          </div>
+
+          {!isIos ? (
+            <Button type="button" className="w-full gap-2" onClick={handleInstall} disabled={!canInstall}>
+              <Download className="h-4 w-4" />
+              Install Shared App
+            </Button>
+          ) : (
+            <p className="rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-sm text-blue-700">
+              Open this page in Safari, tap Share, then choose Add to Home Screen.
+            </p>
+          )}
+
+          {message ? <p className="text-sm text-emerald-800">{message}</p> : null}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function SharedAccessPage() {
   const [, setLocation] = useLocation();
   const [mealCode, setMealCode] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const savedMealCode = window.localStorage.getItem(LAST_SHARED_MEAL_CODE_KEY) ?? "";
+    if (!savedMealCode) {
+      return;
+    }
+
+    setMealCode(savedMealCode);
+
+    const isStandalone =
+      window.matchMedia("(display-mode: standalone)").matches ||
+      window.navigator.standalone === true;
+
+    if (isStandalone) {
+      setLocation(`/shared/${savedMealCode}`);
+    }
+  }, [setLocation]);
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -206,6 +291,7 @@ export function SharedAccessPage() {
         throw new Error(body?.message || "This Meal Code is invalid or sharing is disabled. Ask the manager for a valid code.");
       }
 
+      window.localStorage.setItem(LAST_SHARED_MEAL_CODE_KEY, normalizedCode);
       setLocation(`/shared/${normalizedCode}`);
     } catch (caughtError) {
       setError(getMealCodeErrorMessage(caughtError));
@@ -282,6 +368,7 @@ export function SharedAccessPage() {
           <p className="text-center text-xs text-muted-foreground">
             If the code does not work, ask the manager to confirm sharing is enabled.
           </p>
+          <SharedInstallCard />
         </CardContent>
       </Card>
     </div>
@@ -312,6 +399,7 @@ export default function SharedPage({ token }: { token: string }) {
         }
 
         if (active) {
+          window.localStorage.setItem(LAST_SHARED_MEAL_CODE_KEY, token);
           setData(body as SharedPayload);
         }
       } catch (caughtError) {
@@ -542,6 +630,7 @@ export default function SharedPage({ token }: { token: string }) {
             </div>
           </div>
           <div className="flex items-center gap-2 self-start sm:self-auto">
+            <SharedInstallCard compact />
             <Button variant="outline" size="sm" className="gap-2" onClick={() => setLocation("/shared")}>
               <ArrowLeftRight className="h-4 w-4" />
               Change Meal Code

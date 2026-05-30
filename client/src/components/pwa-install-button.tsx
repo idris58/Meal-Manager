@@ -12,25 +12,24 @@ import {
 import { usePwaInstall } from '@/lib/pwa';
 
 type PwaInstallButtonProps = {
+  appId: 'main' | 'shared';
   appName: string;
-  installPath: string;
   className?: string;
-  forceVisible?: boolean;
   size?: 'default' | 'sm';
 };
 
 export function PwaInstallButton({
+  appId,
   appName,
-  installPath,
   className,
-  forceVisible = false,
   size = 'sm',
 }: PwaInstallButtonProps) {
-  const { canInstall, isInstalled, isIos, promptInstall } = usePwaInstall();
+  const { canInstall, isInstalled, isIos, promptInstall } = usePwaInstall(appId);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const installPath = `${window.location.pathname}${window.location.search}${window.location.hash}`;
 
-  if (!forceVisible && isInstalled) {
+  if (isInstalled) {
     return null;
   }
 
@@ -72,7 +71,7 @@ export function PwaInstallButton({
             <DialogDescription>
               {isIos
                 ? 'Open this page in Safari, tap Share, then choose Add to Home Screen.'
-                : `Open ${installPath} in your browser and use the browser install option for ${appName}. If another MealTrack app is already installed, open this route in a normal browser tab first.`}
+                : `Open this route in your browser and use the browser install option for ${appName}. If another MealTrack app is already installed, open this route in a normal browser tab first.`}
             </DialogDescription>
           </DialogHeader>
           <div className="rounded-lg border bg-secondary/30 p-3 text-sm">

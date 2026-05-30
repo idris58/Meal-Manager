@@ -278,9 +278,8 @@ export function SharedAccessPage() {
     <div className="relative flex min-h-screen items-center justify-center bg-[radial-gradient(circle_at_top_left,rgba(16,185,129,0.16),transparent_34%),linear-gradient(135deg,#f8fafc_0%,#eefcf6_100%)] px-4 py-8">
       <div className="absolute right-4 top-4">
         <PwaInstallButton
+          appId="shared"
           appName="MealTrack Shared"
-          installPath="/shared"
-          forceVisible
           className="gap-1.5 bg-white/80 px-3 text-xs shadow-sm hover:bg-white"
         />
       </div>
@@ -608,18 +607,14 @@ export default function SharedPage({ token }: { token: string }) {
           </div>
           <div className="flex items-center gap-2 self-start sm:self-auto">
             <PwaInstallButton
+              appId="shared"
               appName="MealTrack Shared"
-              installPath={`/shared/${token}`}
-              forceVisible
               className="gap-1.5"
             />
             <Button variant="outline" size="sm" className="gap-2" onClick={handleSwitchCode}>
               <ArrowLeftRight className="h-4 w-4" />
               Switch Code
             </Button>
-            <Badge variant="secondary" className="hidden sm:inline-flex">
-              Read only
-            </Badge>
           </div>
         </div>
       </div>

@@ -57,7 +57,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
           </div>
         </Link>
         <div className="flex items-center gap-1">
-          <PwaInstallButton appName="MealTrack" installPath="/" className="gap-1.5 px-2 text-xs" />
+          <PwaInstallButton appId="main" appName="MealTrack" className="gap-1.5 px-2 text-xs" />
           <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
             <SheetTrigger asChild>
               <Button variant="ghost" size="icon" className="h-11 w-11 p-0">
@@ -120,7 +120,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
               <span className="font-heading font-bold text-xl text-primary">MealTrack</span>
             </div>
           </Link>
-          <PwaInstallButton appName="MealTrack" installPath="/" className="mt-4 w-full justify-start gap-2" />
+          <PwaInstallButton appId="main" appName="MealTrack" className="mt-4 w-full justify-start gap-2" />
         </div>
 
         <nav className="flex-1 p-4 space-y-2">

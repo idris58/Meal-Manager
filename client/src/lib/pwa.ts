@@ -15,14 +15,28 @@ function getStandaloneMode() {
   return window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone === true;
 }
 
-export function usePwaInstall() {
+function getInstalledMarkerKey(appId: string) {
+  return `mealtrack:pwa-installed:${appId}`;
+}
+
+function getCurrentPwaAppId() {
+  return window.location.pathname.startsWith("/shared") ? "shared" : "main";
+}
+
+export function usePwaInstall(appId = "main") {
   const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [isInstalled, setIsInstalled] = useState(false);
   const [isSupported, setIsSupported] = useState(false);
   const [isIos, setIsIos] = useState(false);
 
   useEffect(() => {
-    setIsInstalled(getStandaloneMode());
+    const markerKey = getInstalledMarkerKey(appId);
+    const getAppInstalledState = () => {
+      const isSameStandaloneApp = getStandaloneMode() && getCurrentPwaAppId() === appId;
+      return isSameStandaloneApp || window.localStorage.getItem(markerKey) === "true";
+    };
+
+    setIsInstalled(getAppInstalledState());
     const userAgent = window.navigator.userAgent.toLowerCase();
     const ios = /iphone|ipad|ipod/.test(userAgent);
     setIsIos(ios);
@@ -34,6 +48,7 @@ export function usePwaInstall() {
     };
 
     const handleInstalled = () => {
+      window.localStorage.setItem(markerKey, "true");
       setIsInstalled(true);
       setInstallPrompt(null);
       setIsSupported(false);
@@ -41,7 +56,7 @@ export function usePwaInstall() {
 
     const mediaQuery = window.matchMedia("(display-mode: standalone)");
     const handleDisplayModeChange = () => {
-      setIsInstalled(getStandaloneMode());
+      setIsInstalled(getAppInstalledState());
     };
 
     window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
@@ -53,7 +68,7 @@ export function usePwaInstall() {
       window.removeEventListener("appinstalled", handleInstalled);
       mediaQuery.removeEventListener("change", handleDisplayModeChange);
     };
-  }, []);
+  }, [appId]);
 
   const promptInstall = async () => {
     if (!installPrompt) {
@@ -64,6 +79,8 @@ export function usePwaInstall() {
     const result = await installPrompt.userChoice;
 
     if (result.outcome === "accepted") {
+      window.localStorage.setItem(getInstalledMarkerKey(appId), "true");
+      setIsInstalled(true);
       setInstallPrompt(null);
       setIsSupported(false);
     }

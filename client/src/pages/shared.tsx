@@ -2,7 +2,6 @@ import { FormEvent, useEffect, useMemo, useState, type ReactNode } from "react";
 import {
   ArrowLeftRight,
   ChefHat,
-  Download,
   KeyRound,
   Loader2,
   Megaphone,
@@ -19,11 +18,11 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { PwaInstallButton } from "@/components/pwa-install-button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { usePwaInstall } from "@/lib/pwa";
 import { cn } from "@/lib/utils";
 
 const LAST_SHARED_MEAL_CODE_KEY = "mealtrack:last-shared-meal-code";
@@ -186,70 +185,6 @@ function getExpenseEmptyState(tab: "all" | "meal" | "fixed") {
   };
 }
 
-function SharedInstallCard({ compact = false }: { compact?: boolean }) {
-  const { canInstall, isInstalled, isIos, promptInstall } = usePwaInstall();
-  const [message, setMessage] = useState<string | null>(null);
-
-  if (isInstalled || (!canInstall && !isIos)) {
-    return null;
-  }
-
-  const handleInstall = async () => {
-    const result = await promptInstall();
-
-    if (result.outcome === "accepted") {
-      setMessage("Install prompt accepted. Finish the browser install flow to add MealTrack Shared.");
-      return;
-    }
-
-    setMessage("Install was dismissed. You can try again later.");
-  };
-
-  if (compact) {
-    if (isIos) {
-      return null;
-    }
-
-    return (
-      <Button variant="outline" size="sm" className="gap-2" onClick={handleInstall} disabled={!canInstall}>
-        <Download className="h-4 w-4" />
-        Install
-      </Button>
-    );
-  }
-
-  return (
-    <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4">
-      <div className="flex items-start gap-3">
-        <div className="rounded-lg bg-emerald-500 p-2 text-white">
-          <Download className="h-4 w-4" />
-        </div>
-        <div className="min-w-0 flex-1 space-y-3">
-          <div>
-            <p className="font-medium text-emerald-950">Install MealTrack Shared</p>
-            <p className="mt-1 text-sm text-emerald-800">
-              Add the shared view to your home screen for quick read-only access.
-            </p>
-          </div>
-
-          {!isIos ? (
-            <Button type="button" className="w-full gap-2" onClick={handleInstall} disabled={!canInstall}>
-              <Download className="h-4 w-4" />
-              Install Shared App
-            </Button>
-          ) : (
-            <p className="rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-sm text-blue-700">
-              Open this page in Safari, tap Share, then choose Add to Home Screen.
-            </p>
-          )}
-
-          {message ? <p className="text-sm text-emerald-800">{message}</p> : null}
-        </div>
-      </div>
-    </div>
-  );
-}
-
 function SharedDashboardSkeleton() {
   return (
     <div className="min-h-screen bg-background">
@@ -340,7 +275,15 @@ export function SharedAccessPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[radial-gradient(circle_at_top_left,rgba(16,185,129,0.16),transparent_34%),linear-gradient(135deg,#f8fafc_0%,#eefcf6_100%)] px-4 py-8">
+    <div className="relative flex min-h-screen items-center justify-center bg-[radial-gradient(circle_at_top_left,rgba(16,185,129,0.16),transparent_34%),linear-gradient(135deg,#f8fafc_0%,#eefcf6_100%)] px-4 py-8">
+      <div className="absolute right-4 top-4">
+        <PwaInstallButton
+          appName="MealTrack Shared"
+          installPath="/shared"
+          forceVisible
+          className="gap-1.5 bg-white/80 px-3 text-xs shadow-sm hover:bg-white"
+        />
+      </div>
       <Card className="w-full max-w-md overflow-hidden border-none shadow-2xl shadow-emerald-100/70">
         <CardHeader className="space-y-5 pb-4">
           <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-500 text-white shadow-lg shadow-emerald-200">
@@ -407,7 +350,6 @@ export function SharedAccessPage() {
           <p className="text-center text-xs text-muted-foreground">
             If the code does not work, ask the manager to confirm sharing is enabled.
           </p>
-          <SharedInstallCard />
         </CardContent>
       </Card>
     </div>
@@ -665,7 +607,12 @@ export default function SharedPage({ token }: { token: string }) {
             </div>
           </div>
           <div className="flex items-center gap-2 self-start sm:self-auto">
-            <SharedInstallCard compact />
+            <PwaInstallButton
+              appName="MealTrack Shared"
+              installPath={`/shared/${token}`}
+              forceVisible
+              className="gap-1.5"
+            />
             <Button variant="outline" size="sm" className="gap-2" onClick={handleSwitchCode}>
               <ArrowLeftRight className="h-4 w-4" />
               Switch Code

@@ -1,7 +1,7 @@
 import { useMeal } from '@/lib/meal-context';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Plus, Minus, ShoppingBag, Utensils, RefreshCcw, Calendar as CalendarIcon, Archive, Download } from 'lucide-react';
+import { Plus, Minus, ShoppingBag, Utensils, RefreshCcw, Calendar as CalendarIcon, Archive } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -15,7 +15,6 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
-import { usePwaInstall } from '@/lib/pwa';
 import { format } from 'date-fns';
 
 const expenseSchema = z.object({
@@ -302,68 +301,6 @@ function CycleManagementCard({
   );
 }
 
-function InstallAppCard() {
-  const { canInstall, isInstalled, isIos, promptInstall } = usePwaInstall();
-  const [message, setMessage] = useState<string | null>(null);
-
-  if (isInstalled || (!canInstall && !isIos)) {
-    return null;
-  }
-
-  const handleInstall = async () => {
-    const result = await promptInstall();
-
-    if (result.outcome === 'accepted') {
-      setMessage('Install prompt accepted. Finish the browser install flow to add MealTrack.');
-      return;
-    }
-
-    setMessage('Install was dismissed. You can try again later from this card.');
-  };
-
-  return (
-    <Card>
-      <CardHeader className="pb-3">
-        <CardTitle className="flex items-center gap-2">
-          <Download className="h-5 w-5 text-emerald-500" />
-          Install App
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <p className="text-sm text-muted-foreground">
-          Install MealTrack on your phone or desktop for a faster, app-like experience with home screen access.
-        </p>
-
-        <div className="rounded-xl border bg-secondary/30 p-4">
-          <p className="text-sm font-medium">Installable PWA</p>
-          <p className="mt-1 text-sm text-muted-foreground">
-            {isIos
-              ? 'On iPhone or iPad, use Safari Share -> Add to Home Screen.'
-              : 'This app can be installed without going through an app store.'}
-          </p>
-        </div>
-
-        {!isIos ? (
-          <Button className="w-full gap-2" onClick={handleInstall}>
-            <Download className="h-4 w-4" />
-            Install MealTrack
-          </Button>
-        ) : (
-          <p className="rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-sm text-blue-700">
-            Open this app in Safari, tap the Share icon, then choose Add to Home Screen.
-          </p>
-        )}
-
-        {message ? (
-          <p className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
-            {message}
-          </p>
-        ) : null}
-      </CardContent>
-    </Card>
-  );
-}
-
 export default function Dashboard() {
   const { stats, getMemberStats, members, closeActiveCycle, pendingCycle } = useMeal();
   const [openExpense, setOpenExpense] = useState(false);
@@ -516,7 +453,6 @@ export default function Dashboard() {
       </section>
 
       <section className="space-y-4 pt-2">
-        <InstallAppCard />
         <CycleManagementCard onCloseCycle={closeActiveCycle} hasPendingCycle={!!pendingCycle} />
       </section>
     </div>

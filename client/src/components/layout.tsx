@@ -13,6 +13,7 @@ import {
   Loader2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { PwaInstallButton } from '@/components/pwa-install-button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { useAuth } from '@/lib/auth-context';
 
@@ -55,12 +56,14 @@ export function Layout({ children }: { children: React.ReactNode }) {
             <span className="font-heading font-bold text-lg text-primary">MealTrack</span>
           </div>
         </Link>
-        <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
-          <SheetTrigger asChild>
-            <Button variant="ghost" size="icon" className="h-11 w-11 p-0">
-              <Menu className="h-7 w-7" />
-            </Button>
-          </SheetTrigger>
+        <div className="flex items-center gap-1">
+          <PwaInstallButton appName="MealTrack" installPath="/" className="gap-1.5 px-2 text-xs" />
+          <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
+            <SheetTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-11 w-11 p-0">
+                <Menu className="h-7 w-7" />
+              </Button>
+            </SheetTrigger>
           <SheetContent side="left" className="w-[80%] max-w-[300px] p-0">
             <div className="h-full flex flex-col bg-card">
               <div className="p-6 border-b">
@@ -104,7 +107,8 @@ export function Layout({ children }: { children: React.ReactNode }) {
               </div>
             </div>
           </SheetContent>
-        </Sheet>
+          </Sheet>
+        </div>
       </div>
 
       {/* Desktop Sidebar */}
@@ -116,6 +120,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
               <span className="font-heading font-bold text-xl text-primary">MealTrack</span>
             </div>
           </Link>
+          <PwaInstallButton appName="MealTrack" installPath="/" className="mt-4 w-full justify-start gap-2" />
         </div>
 
         <nav className="flex-1 p-4 space-y-2">

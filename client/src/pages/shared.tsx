@@ -294,10 +294,6 @@ export function SharedAccessPage() {
     const savedMealCode = window.localStorage.getItem(LAST_SHARED_MEAL_CODE_KEY) ?? "";
     const shouldSwitchCode = window.sessionStorage.getItem(SWITCH_SHARED_MEAL_CODE_KEY) === "true";
 
-    if (shouldSwitchCode) {
-      window.sessionStorage.removeItem(SWITCH_SHARED_MEAL_CODE_KEY);
-    }
-
     if (!savedMealCode) {
       return;
     }
@@ -334,6 +330,7 @@ export function SharedAccessPage() {
       }
 
       window.localStorage.setItem(LAST_SHARED_MEAL_CODE_KEY, normalizedCode);
+      window.sessionStorage.removeItem(SWITCH_SHARED_MEAL_CODE_KEY);
       setLocation(`/shared/${normalizedCode}`);
     } catch (caughtError) {
       setError(getMealCodeErrorMessage(caughtError));

@@ -19,6 +19,10 @@ function getInstalledMarkerKey(appId: string) {
   return `mealtrack:pwa-installed:${appId}`;
 }
 
+let deferredInstallPrompt: BeforeInstallPromptEvent | null = null;
+let pwaBrowserListenersAttached = false;
+const installPromptSubscribers = new Set<() => void>();
+
 function dispatchPwaInstallStateChange(appId: string) {
   window.dispatchEvent(new CustomEvent("mealtrack:pwa-install-state-change", { detail: { appId } }));
 }
@@ -27,17 +31,56 @@ function getCurrentPwaAppId() {
   return window.location.pathname.startsWith("/shared") ? "shared" : "main";
 }
 
+function notifyInstallPromptSubscribers() {
+  for (const subscriber of Array.from(installPromptSubscribers)) {
+    subscriber();
+  }
+}
+
+function ensurePwaBrowserListeners() {
+  if (typeof window === "undefined" || pwaBrowserListenersAttached) {
+    return;
+  }
+
+  pwaBrowserListenersAttached = true;
+
+  window.addEventListener("beforeinstallprompt", (event: Event) => {
+    event.preventDefault();
+    deferredInstallPrompt = event as BeforeInstallPromptEvent;
+    notifyInstallPromptSubscribers();
+  });
+
+  window.addEventListener("appinstalled", () => {
+    const appId = getCurrentPwaAppId();
+    window.localStorage.setItem(getInstalledMarkerKey(appId), "true");
+    deferredInstallPrompt = null;
+    dispatchPwaInstallStateChange(appId);
+    notifyInstallPromptSubscribers();
+  });
+}
+
+ensurePwaBrowserListeners();
+
 export function usePwaInstall(appId = "main") {
-  const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null);
+  const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(deferredInstallPrompt);
   const [isInstalled, setIsInstalled] = useState(false);
-  const [isSupported, setIsSupported] = useState(false);
+  const [isSupported, setIsSupported] = useState(Boolean(deferredInstallPrompt));
   const [isIos, setIsIos] = useState(false);
 
   useEffect(() => {
+    ensurePwaBrowserListeners();
     const markerKey = getInstalledMarkerKey(appId);
     const getAppInstalledState = () => {
       const isSameStandaloneApp = getStandaloneMode() && getCurrentPwaAppId() === appId;
-      return isSameStandaloneApp || window.localStorage.getItem(markerKey) === "true";
+      if (isSameStandaloneApp) {
+        return true;
+      }
+
+      if (deferredInstallPrompt) {
+        return false;
+      }
+
+      return window.localStorage.getItem(markerKey) === "true";
     };
 
     if (getStandaloneMode() && getCurrentPwaAppId() === appId) {
@@ -45,23 +88,11 @@ export function usePwaInstall(appId = "main") {
     }
 
     setIsInstalled(getAppInstalledState());
+    setInstallPrompt(deferredInstallPrompt);
+    setIsSupported(Boolean(deferredInstallPrompt));
     const userAgent = window.navigator.userAgent.toLowerCase();
     const ios = /iphone|ipad|ipod/.test(userAgent);
     setIsIos(ios);
-
-    const handleBeforeInstallPrompt = (event: Event) => {
-      event.preventDefault();
-      setInstallPrompt(event as BeforeInstallPromptEvent);
-      setIsSupported(true);
-    };
-
-    const handleInstalled = () => {
-      window.localStorage.setItem(markerKey, "true");
-      dispatchPwaInstallStateChange(appId);
-      setIsInstalled(true);
-      setInstallPrompt(null);
-      setIsSupported(false);
-    };
 
     const mediaQuery = window.matchMedia("(display-mode: standalone)");
     const handleDisplayModeChange = () => {
@@ -79,15 +110,19 @@ export function usePwaInstall(appId = "main") {
       }
     };
 
-    window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
-    window.addEventListener("appinstalled", handleInstalled);
+    const handleInstallPromptChange = () => {
+      setInstallPrompt(deferredInstallPrompt);
+      setIsSupported(Boolean(deferredInstallPrompt));
+      setIsInstalled(getAppInstalledState());
+    };
+
+    installPromptSubscribers.add(handleInstallPromptChange);
     window.addEventListener("mealtrack:pwa-install-state-change", handleInstallStateChange);
     window.addEventListener("storage", handleInstallStateChange);
     mediaQuery.addEventListener("change", handleDisplayModeChange);
 
     return () => {
-      window.removeEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
-      window.removeEventListener("appinstalled", handleInstalled);
+      installPromptSubscribers.delete(handleInstallPromptChange);
       window.removeEventListener("mealtrack:pwa-install-state-change", handleInstallStateChange);
       window.removeEventListener("storage", handleInstallStateChange);
       mediaQuery.removeEventListener("change", handleDisplayModeChange);
@@ -95,19 +130,22 @@ export function usePwaInstall(appId = "main") {
   }, [appId]);
 
   const promptInstall = async () => {
-    if (!installPrompt) {
+    const prompt = installPrompt ?? deferredInstallPrompt;
+    if (!prompt) {
       return { outcome: "dismissed" as const };
     }
 
-    await installPrompt.prompt();
-    const result = await installPrompt.userChoice;
+    await prompt.prompt();
+    const result = await prompt.userChoice;
 
     if (result.outcome === "accepted") {
       window.localStorage.setItem(getInstalledMarkerKey(appId), "true");
       dispatchPwaInstallStateChange(appId);
+      deferredInstallPrompt = null;
       setIsInstalled(true);
       setInstallPrompt(null);
       setIsSupported(false);
+      notifyInstallPromptSubscribers();
     }
 
     return result;

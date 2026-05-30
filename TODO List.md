@@ -1,25 +1,44 @@
-1. add shared view PWA install experience
-- Add dedicated MealTrack Shared web manifest
-- Switch manifest metadata for shared routes
-- Remember the last shared Meal Code locally
-- Open the saved shared dashboard from the installed shared app
-- Add shared-view install controls
+fix: allow shared PWA to switch meal code
 
-2. add live shared dashboard updates
-- Broadcast full shared payloads over server-sent events
-- Update shared view data without page reload after meal, expense, deposit, member, and cycle changes
-- Reuse the shared payload loader for initial fetch and live broadcasts
+- Add a one-time switch-code flag for the shared PWA
+- Prevent saved-code auto-redirect when switching codes
+- Rename Change Meal Code actions to Switch Code
 
-3. rename app to MealTrack
-- Update visible app branding from MealManager to MealTrack
-- Rename PWA manifest, page titles, and social metadata
-- Update install prompt copy and package metadata
+fix: keep shared PWA on code switch after refresh
 
-4. restrict negative expenses
-before i have allowed negative expense amount for adjustments, now make it allow only in pending-cycle expense corrections
-- Allow negative expense amounts only for pending-cycle corrections
-- Enforce active-cycle positive expense validation in dashboard and expenses forms
-- Add data-layer guards for negative expense create and update calls
+- Preserve switch-code mode while the shared access page is open
+- Prevent refresh from auto-redirecting back to the saved Meal Code
+- Clear switch-code mode only after a valid new code is opened
 
-5. Add skeleton loaders for better UX
-- Replace plain loading states with skeleton layouts for app, shared view, and settings
+
+feat: improve PWA install buttons
+
+- Add reusable Install App button with fallback install instructions
+- Show main app install action in the app header
+- Show shared app install action in shared view headers
+- Keep shared install action visible inside the installed main PWA
+- Remove old dashboard and shared install card placements
+
+fix: improve route-aware PWA install flow
+
+- Track main and shared PWA install state separately
+- Use the current route as the install context
+- Hide install buttons after the matching app is installed
+- Keep shared install available when only the main app is installed
+- Remove the read-only badge from the shared header
+
+fix: restore native PWA install button behavior
+
+- Hide install buttons when no native install prompt is available
+- Remove fallback install instruction dialog
+- Trigger browser install flow directly from the install button
+- Keep install buttons hidden after the matching app is installed
+
+fix: keep iOS PWA install instructions
+
+- Show install button on iOS without native prompt support
+- Open Add to Home Screen instructions for iOS users
+- Keep direct native install behavior for supported browsers
+- Avoid fallback dialogs on non-iOS browsers without install prompts
+
+another thing is in shared landing page the install button is show and after click it even work

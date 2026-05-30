@@ -42,8 +42,6 @@ export function PwaInstallButton({
         setMessage(`${appName} install started. Finish the browser install flow.`);
         return;
       }
-
-      setMessage('Install was dismissed. You can try again from this button.');
       return;
     }
 

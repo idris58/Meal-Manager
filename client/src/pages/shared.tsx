@@ -27,6 +27,7 @@ import { usePwaInstall } from "@/lib/pwa";
 import { cn } from "@/lib/utils";
 
 const LAST_SHARED_MEAL_CODE_KEY = "mealtrack:last-shared-meal-code";
+const SWITCH_SHARED_MEAL_CODE_KEY = "mealtrack:switch-shared-meal-code";
 
 type SharedMember = {
   id: string;
@@ -291,6 +292,12 @@ export function SharedAccessPage() {
 
   useEffect(() => {
     const savedMealCode = window.localStorage.getItem(LAST_SHARED_MEAL_CODE_KEY) ?? "";
+    const shouldSwitchCode = window.sessionStorage.getItem(SWITCH_SHARED_MEAL_CODE_KEY) === "true";
+
+    if (shouldSwitchCode) {
+      window.sessionStorage.removeItem(SWITCH_SHARED_MEAL_CODE_KEY);
+    }
+
     if (!savedMealCode) {
       return;
     }
@@ -301,7 +308,7 @@ export function SharedAccessPage() {
       window.matchMedia("(display-mode: standalone)").matches ||
       window.navigator.standalone === true;
 
-    if (isStandalone) {
+    if (isStandalone && !shouldSwitchCode) {
       setLocation(`/shared/${savedMealCode}`);
     }
   }, [setLocation]);
@@ -417,6 +424,11 @@ export default function SharedPage({ token }: { token: string }) {
   const [error, setError] = useState<string | null>(null);
   const [summaryMode, setSummaryMode] = useState<"all" | "single">("all");
   const [selectedMemberId, setSelectedMemberId] = useState("");
+
+  const handleSwitchCode = () => {
+    window.sessionStorage.setItem(SWITCH_SHARED_MEAL_CODE_KEY, "true");
+    setLocation("/shared");
+  };
 
   useEffect(() => {
     let active = true;
@@ -623,9 +635,9 @@ export default function SharedPage({ token }: { token: string }) {
             <p className="text-sm text-muted-foreground">
               Ask the manager for a fresh shared link or Meal Code if you still need access.
             </p>
-            <Button variant="outline" className="gap-2" onClick={() => setLocation("/shared")}>
+            <Button variant="outline" className="gap-2" onClick={handleSwitchCode}>
               <ArrowLeftRight className="h-4 w-4" />
-              Change Meal Code
+              Switch Code
             </Button>
           </CardContent>
         </Card>
@@ -657,9 +669,9 @@ export default function SharedPage({ token }: { token: string }) {
           </div>
           <div className="flex items-center gap-2 self-start sm:self-auto">
             <SharedInstallCard compact />
-            <Button variant="outline" size="sm" className="gap-2" onClick={() => setLocation("/shared")}>
+            <Button variant="outline" size="sm" className="gap-2" onClick={handleSwitchCode}>
               <ArrowLeftRight className="h-4 w-4" />
-              Change Meal Code
+              Switch Code
             </Button>
             <Badge variant="secondary" className="hidden sm:inline-flex">
               Read only

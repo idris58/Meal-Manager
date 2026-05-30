@@ -94,14 +94,6 @@ export function usePwaInstall(appId = "main") {
     };
   }, [appId]);
 
-  const markInstalled = () => {
-    window.localStorage.setItem(getInstalledMarkerKey(appId), "true");
-    dispatchPwaInstallStateChange(appId);
-    setIsInstalled(true);
-    setInstallPrompt(null);
-    setIsSupported(false);
-  };
-
   const promptInstall = async () => {
     if (!installPrompt) {
       return { outcome: "dismissed" as const };
@@ -126,7 +118,6 @@ export function usePwaInstall(appId = "main") {
     isSupported,
     isIos,
     canInstall: isSupported && !isInstalled && !!installPrompt,
-    markInstalled,
     promptInstall,
   };
 }

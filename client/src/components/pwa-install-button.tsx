@@ -2,14 +2,6 @@ import { useState } from 'react';
 import { CloudDownload } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
 import { usePwaInstall } from '@/lib/pwa';
 
 type PwaInstallButtonProps = {
@@ -25,12 +17,10 @@ export function PwaInstallButton({
   className,
   size = 'sm',
 }: PwaInstallButtonProps) {
-  const { canInstall, isInstalled, isIos, markInstalled, promptInstall } = usePwaInstall(appId);
-  const [dialogOpen, setDialogOpen] = useState(false);
+  const { canInstall, isInstalled, promptInstall } = usePwaInstall(appId);
   const [message, setMessage] = useState<string | null>(null);
-  const installPath = `${window.location.pathname}${window.location.search}${window.location.hash}`;
 
-  if (isInstalled) {
+  if (isInstalled || !canInstall) {
     return null;
   }
 
@@ -48,17 +38,10 @@ export function PwaInstallButton({
       setMessage('Install was dismissed. You can try again from this button.');
       return;
     }
-
-    setDialogOpen(true);
-  };
-
-  const handleMarkInstalled = () => {
-    markInstalled();
-    setDialogOpen(false);
   };
 
   return (
-    <>
+    <div className="space-y-1">
       <Button
         type="button"
         variant="ghost"
@@ -69,29 +52,7 @@ export function PwaInstallButton({
         <CloudDownload className="h-4 w-4" />
         <span>Install App</span>
       </Button>
-
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Install {appName}</DialogTitle>
-            <DialogDescription>
-              {isIos
-                ? 'Open this page in Safari, tap Share, then choose Add to Home Screen.'
-                : `The browser did not provide an install prompt for ${appName}. Use the browser install option for this route, or mark it installed if you already added it.`}
-            </DialogDescription>
-          </DialogHeader>
-          <div className="rounded-lg border bg-secondary/30 p-3 text-sm">
-            <p className="font-medium">Install route</p>
-            <p className="mt-1 break-all text-muted-foreground">{installPath}</p>
-          </div>
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={handleMarkInstalled}>
-              Already Installed
-            </Button>
-          </DialogFooter>
-          {message ? <p className="text-sm text-muted-foreground">{message}</p> : null}
-        </DialogContent>
-      </Dialog>
-    </>
+      {message ? <p className="text-xs text-muted-foreground">{message}</p> : null}
+    </div>
   );
 }

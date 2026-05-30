@@ -6,6 +6,7 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
@@ -24,7 +25,7 @@ export function PwaInstallButton({
   className,
   size = 'sm',
 }: PwaInstallButtonProps) {
-  const { canInstall, isInstalled, isIos, promptInstall } = usePwaInstall(appId);
+  const { canInstall, isInstalled, isIos, markInstalled, promptInstall } = usePwaInstall(appId);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const installPath = `${window.location.pathname}${window.location.search}${window.location.hash}`;
@@ -51,6 +52,11 @@ export function PwaInstallButton({
     setDialogOpen(true);
   };
 
+  const handleMarkInstalled = () => {
+    markInstalled();
+    setDialogOpen(false);
+  };
+
   return (
     <>
       <Button
@@ -71,13 +77,18 @@ export function PwaInstallButton({
             <DialogDescription>
               {isIos
                 ? 'Open this page in Safari, tap Share, then choose Add to Home Screen.'
-                : `Open this route in your browser and use the browser install option for ${appName}. If another MealTrack app is already installed, open this route in a normal browser tab first.`}
+                : `The browser did not provide an install prompt for ${appName}. Use the browser install option for this route, or mark it installed if you already added it.`}
             </DialogDescription>
           </DialogHeader>
           <div className="rounded-lg border bg-secondary/30 p-3 text-sm">
             <p className="font-medium">Install route</p>
             <p className="mt-1 break-all text-muted-foreground">{installPath}</p>
           </div>
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={handleMarkInstalled}>
+              Already Installed
+            </Button>
+          </DialogFooter>
           {message ? <p className="text-sm text-muted-foreground">{message}</p> : null}
         </DialogContent>
       </Dialog>
